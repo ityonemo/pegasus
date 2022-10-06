@@ -11,7 +11,7 @@ https://www.piumarta.com/software/peg/peg.1.html
 ```elixir
 def deps do
   [
-    {:pegasus, "~> 0.1.0"}
+    {:pegasus, "~> 0.1.1"}
   ]
 end
 ```

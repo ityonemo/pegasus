@@ -100,22 +100,22 @@ defmodule PegasusTest.ComponentsTest do
     end
 
     test "parses escaped values" do
-      assert_parsed(char(~S"\a"), [~c'\a'])
-      assert_parsed(char(~S"\b"), [~c'\b'])
-      assert_parsed(char(~S"\n"), [~c'\n'])
-      assert_parsed(char(~S"\f"), [~c'\f'])
-      assert_parsed(char(~S"\e"), [~c'\e'])
-      assert_parsed(char(~S"\r"), [~c'\r'])
-      assert_parsed(char(~S"\t"), [~c'\t'])
-      assert_parsed(char(~S"\v"), [~c'\v'])
+      assert_parsed(char(~S"\a"), ~c'\a')
+      assert_parsed(char(~S"\b"), ~c'\b')
+      assert_parsed(char(~S"\n"), ~c'\n')
+      assert_parsed(char(~S"\f"), ~c'\f')
+      assert_parsed(char(~S"\e"), ~c'\e')
+      assert_parsed(char(~S"\r"), ~c'\r')
+      assert_parsed(char(~S"\t"), ~c'\t')
+      assert_parsed(char(~S"\v"), ~c'\v')
 
-      assert_parsed(char(~S(\')), [~C(')])
-      assert_parsed(char(~S(\")), [~C(")])
-      assert_parsed(char(~S(\[)), [~C([)])
-      assert_parsed(char(~S(\])), [~C(])])
-      assert_parsed(char(~S(\-)), [~C(-)])
+      assert_parsed(char(~S(\')), ~C('))
+      assert_parsed(char(~S(\")), ~C("))
+      assert_parsed(char(~S(\[)), ~C([))
+      assert_parsed(char(~S(\])), ~C(]))
+      assert_parsed(char(~S(\-)), ~C(-))
       # \\ -> '\'
-      assert_parsed(char(<<92, 92>>), [[92]])
+      assert_parsed(char(<<92, 92>>), [92])
     end
 
     test "parses octal values" do
@@ -144,6 +144,7 @@ defmodule PegasusTest.ComponentsTest do
 
     test "correctly parses a single escaped char" do
       assert_parsed(range(~S(\123)), [0o123])
+      assert_parsed(range(<<92, 92>>, [92]))
     end
   end
 end

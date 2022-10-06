@@ -109,20 +109,20 @@ defmodule Pegasus.Components do
   end
 
   @escape_lookup %{
-    ?a => ~c'\a',
-    ?b => ~c'\b',
-    ?e => ~c'\e',
-    ?f => ~c'\f',
-    ?n => ~c'\n',
-    ?r => ~c'\r',
-    ?t => ~c'\t',
-    ?v => ~c'\v',
-    ?' => ~c('),
-    ?" => ~c("),
-    ?[ => ~c([),
-    ?] => ~c(]),
-    ?- => ~c(-),
-    92 => [92]
+    ?a => ?\a,
+    ?b => ?\b,
+    ?e => ?\e,
+    ?f => ?\f,
+    ?n => ?\n,
+    ?r => ?\r,
+    ?t => ?\t,
+    ?v => ?\v,
+    ?' => ?',
+    ?" => ?",
+    ?[ => ?[,
+    ?] => ?],
+    ?- => ?-,
+    92 => 92
   }
 
   @escape_keys Map.keys(@escape_lookup)
