@@ -18,7 +18,7 @@ defmodule Pegasus do
 
   Now each included parser identifier is turned into a public function.
 
-  See `NimbleParsec` for the definition
+  See `NimbleParsec` for the description of the output.
 
   ```
   MyModule.foo("foobar")
