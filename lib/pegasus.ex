@@ -1,6 +1,55 @@
 defmodule Pegasus do
   @moduledoc """
-  converts `.peg` files into NimbleParsec parsers
+  converts `peg` files into `NimbleParsec` parsers.
+
+  For documentation on this peg format:  https://www.piumarta.com/software/peg/peg.1.html
+
+  To use, drop this in your model:
+
+  ```
+  defmodule MyModule
+    require Pegasus
+
+    Pegasus.parser_from_string(\"""
+    foo <- "foo" "bar"
+    \""")
+  end
+  ```
+
+  Now each included parser identifier is turned into a public function.
+
+  See `NimbleParsec` for the definition
+
+  ```
+  MyModule.foo("foobar")
+  ```
+
+  Note: for capitalized identifiers, you will have to use Kernel.apply/2 to call
+  the function.
+
+  You may also load a parser from a file using `parser_from_file/2`.
+
+  ### Post-Traversals
+
+  You may supply a post_traversal for any parser.  See `NimbleParsec` for how to
+  implement post-traversal functions.  These are defined by passing a keyword list
+  to the `parser_from_file/2` or `parser_from_string/2` function.
+
+  #### Example
+
+  ```
+  Pegasus.parser_from_string(\"""
+  foo <- "foo" "bar"
+  \""", foo: {:some_function, []})
+
+  defp foo(rest, ["bar", "foo"], context, {_line, _col}, _bytes) do
+    {rest, [:parsed], context}
+  end
+  ```
+
+  ### Not implemented
+
+  Actions, which imply the use of C code, are not implemented.
   """
 
   import NimbleParsec

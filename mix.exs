@@ -8,6 +8,8 @@ defmodule Pegasus.MixProject do
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
+      description: "peg -> nimbleparsec",
+      package: package(),
       deps: deps()
     ]
   end
@@ -18,10 +20,19 @@ defmodule Pegasus.MixProject do
     ]
   end
 
-  def elixirc_paths(:test), do: ["lib", "test/_support"]
-  def elixirc_paths(_), do: ["lib"]
+  defp package do
+    [
+      licenses: ["MIT"],
+      links: %{
+        github: "https://github.com/ityonemo/pegasus"
+      }
+    ]
+  end
+
+  defp elixirc_paths(:test), do: ["lib", "test/_support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
-    [nimble_parsec: "~> 1.2"]
+    [{:nimble_parsec, "~> 1.2"}, {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}]
   end
 end

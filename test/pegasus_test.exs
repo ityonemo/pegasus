@@ -148,10 +148,10 @@ defmodule PegasusTest do
 
   describe "post_traverse settings work" do
     Pegasus.parser_from_string("post_traverse_ungrouped <- 'foo' [a-z]",
-      post_traverse_ungrouped: {:post_traverse_ungrouped, [:test]}
+      post_traverse_ungrouped: {:post_traverse_ungrouped, []}
     )
 
-    defp post_traverse_ungrouped("", [?a, "foo"], context, {1, 0}, 4, :test) do
+    defp post_traverse_ungrouped("", [?a, "foo"], context, {1, 0}, 4) do
       {"", [], Map.put(context, :parsed, true)}
     end
 
