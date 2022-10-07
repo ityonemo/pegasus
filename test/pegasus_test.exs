@@ -4,7 +4,7 @@ defmodule PegasusTest do
   require Pegasus
   import PegasusTest.Case
 
-  Pegasus.parser_from_string("char_range <- [a-z]")
+  Pegasus.parser_from_string("char_range <- [a-z]", char_range: [parser: true])
 
   describe "char_range works" do
     test "char_range" do
@@ -13,7 +13,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("literal <- 'foo'")
+  Pegasus.parser_from_string("literal <- 'foo'", literal: [parser: true])
 
   describe "literal works" do
     test "literal" do
@@ -22,7 +22,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("sequence <- 'foo' 'bar'")
+  Pegasus.parser_from_string("sequence <- 'foo' 'bar'", sequence: [parser: true])
 
   describe "sequence works" do
     test "sequence" do
@@ -31,7 +31,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("lookahead <- &'f' 'foo'")
+  Pegasus.parser_from_string("lookahead <- &'f' 'foo'", lookahead: [parser: true])
 
   describe "lookahead works" do
     test "lookahead" do
@@ -39,7 +39,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("lookahead_not <- !'aaa' [a-z][a-z][a-z]")
+  Pegasus.parser_from_string("lookahead_not <- !'aaa' [a-z][a-z][a-z]", lookahead_not: [parser: true])
 
   describe "lookahead_not works" do
     test "lookahead_not" do
@@ -48,7 +48,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("optional <- 'foo' 'bar'?")
+  Pegasus.parser_from_string("optional <- 'foo' 'bar'?", optional: [parser: true])
 
   describe "optional works" do
     test "optional" do
@@ -59,7 +59,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("repeat <- 'foo' 'bar'*")
+  Pegasus.parser_from_string("repeat <- 'foo' 'bar'*", repeat: [parser: true])
 
   describe "repeat works" do
     test "repeat" do
@@ -70,7 +70,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("times <- 'foo' 'bar'+")
+  Pegasus.parser_from_string("times <- 'foo' 'bar'+", times: [parser: true])
 
   describe "times works" do
     test "times" do
@@ -84,7 +84,7 @@ defmodule PegasusTest do
   Pegasus.parser_from_string("""
   identifier <- 'foo' IDENTIFIER  # plus a comment, why not
   IDENTIFIER <- 'bar'
-  """)
+  """, identifier: [parser: true])
 
   describe "identifiers work" do
     test "identifier" do
@@ -94,7 +94,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("choice <- 'foo' / 'bar'")
+  Pegasus.parser_from_string("choice <- 'foo' / 'bar'", choice: [parser: true])
 
   describe "choice works" do
     test "choice" do
@@ -104,7 +104,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("dumb_parens <- ('foo' [a-z]) 'bar' ")
+  Pegasus.parser_from_string("dumb_parens <- ('foo' [a-z]) 'bar' ", dumb_parens: [parser: true])
 
   describe "dumb parens work" do
     test "dumb_parens" do
@@ -116,7 +116,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("times_parens <- ('foo' [a-z])+ 'bar' ")
+  Pegasus.parser_from_string("times_parens <- ('foo' [a-z])+ 'bar' ", times_parens: [parser: true])
 
   describe "smart parens work" do
     test "with times" do
@@ -127,7 +127,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("begin_end <- < 'foo' [a-z] > 'bar' ")
+  Pegasus.parser_from_string("begin_end <- < 'foo' [a-z] > 'bar' ", begin_end: [parser: true])
 
   describe "begin-end works" do
     test "to group" do
@@ -136,7 +136,7 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("dot <- 'foo' .")
+  Pegasus.parser_from_string("dot <- 'foo' .", dot: [parser: true])
 
   describe "dot works" do
     test "dot" do
@@ -148,7 +148,10 @@ defmodule PegasusTest do
 
   describe "post_traverse settings work" do
     Pegasus.parser_from_string("post_traverse_ungrouped <- 'foo' [a-z]",
-      post_traverse_ungrouped: {:post_traverse_ungrouped, []}
+      post_traverse_ungrouped: [
+        parser: true,
+        post_traverse: {:post_traverse_ungrouped, []}
+      ]
     )
 
     defp post_traverse_ungrouped("", [?a, "foo"], context, {1, 0}, 4) do
@@ -161,7 +164,10 @@ defmodule PegasusTest do
     end
 
     Pegasus.parser_from_string("post_traverse_grouped <- ('foo' [a-z])",
-      post_traverse_grouped: {:post_traverse_grouped, [:test]}
+      post_traverse_grouped: [
+        parser: true,
+        post_traverse: {:post_traverse_grouped, [:test]}
+      ]
     )
 
     defp post_traverse_grouped("", ["fooa"], context, {1, 0}, 4, :test) do
@@ -174,7 +180,10 @@ defmodule PegasusTest do
     end
 
     Pegasus.parser_from_string("post_traverse_tagged <- <'foo' [a-z]> 'bar'",
-      post_traverse_tagged: {:post_traverse_tagged, [:test]}
+      post_traverse_tagged: [
+        parser: true,
+        post_traverse: {:post_traverse_tagged, [:test]}
+      ]
     )
 
     defp post_traverse_tagged("", ["fooa"], context, {1, 0}, 4, :test) do

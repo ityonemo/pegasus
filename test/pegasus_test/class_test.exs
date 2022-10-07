@@ -23,7 +23,7 @@ defmodule PegasusTest.ClassTest do
 
     test "can match an escaped chars" do
       assert_parser(parser(~S"[\nc]"), {:char, ~c(\nc)})
-      #assert_parser(parser(~S"[\\c]"), {:char, ~C(\c)})
+      # assert_parser(parser(~S"[\\c]"), {:char, ~C(\c)})
     end
 
     test "can match a char and a range" do

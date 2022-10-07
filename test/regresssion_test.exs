@@ -4,7 +4,7 @@ defmodule PegasusTest.RegressionTest do
   require Pegasus
   import PegasusTest.Case
 
-  Pegasus.parser_from_string(~S"slash <- [\\t]")
+  Pegasus.parser_from_string(~S"slash <- [\\t]", slash: [parser: true])
 
   describe "slash in range works" do
     test "slash" do

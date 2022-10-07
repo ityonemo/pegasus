@@ -1,25 +1,38 @@
 defmodule Pegasus.Ast do
   import NimbleParsec
 
-  def to_nimble_parsec({:ok, list, "", _, _, _}, post_traversals) do
-    to_nimble_parsec(list, post_traversals)
+  def to_nimble_parsec({:ok, list, "", _, _, _}, opts) do
+    to_nimble_parsec(list, opts)
   end
 
-  def to_nimble_parsec(ast, post_traversals) when is_list(ast) do
-    Enum.map(ast, &to_nimble_parsec(&1, post_traversals))
+  def to_nimble_parsec(ast, opts) when is_list(ast) do
+    Enum.map(ast, &to_nimble_parsec(&1, opts))
   end
 
-  def to_nimble_parsec({name, parser_ast}, post_traversals) do
-    parser =
-      if post_traversal = Keyword.get(post_traversals, name) do
-        parser_ast
-        |> from_sequence()
-        |> post_traverse(post_traversal)
-      else
-        from_sequence(parser_ast)
-      end
+  def to_nimble_parsec({name, parser_ast}, opts) do
+    name_opts = Keyword.get(opts, name, [])
+
+    parser = parser_ast
+    |> from_sequence()
+    |> maybe_tag(name, name_opts)
+    |> maybe_post_traverse(name_opts)
 
     {name, parser}
+  end
+
+  defp maybe_tag(parsec, name, name_opts) do
+    case Keyword.get(name_opts, :tag, name) do
+      false -> parsec
+      tag -> tag(parsec, tag)
+    end
+  end
+
+  defp maybe_post_traverse(parsec, name_opts) do
+    if post_traverse = Keyword.get(name_opts, :post_tarverse) do
+      post_traverse(parsec, post_traverse)
+    else
+      parsec
+    end
   end
 
   def from_sequence(parser_ast) do
