@@ -39,7 +39,9 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("lookahead_not <- !'aaa' [a-z][a-z][a-z]", lookahead_not: [parser: true])
+  Pegasus.parser_from_string("lookahead_not <- !'aaa' [a-z][a-z][a-z]",
+    lookahead_not: [parser: true]
+  )
 
   describe "lookahead_not works" do
     test "lookahead_not" do
@@ -81,10 +83,13 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("""
-  identifier <- 'foo' IDENTIFIER  # plus a comment, why not
-  IDENTIFIER <- 'bar'
-  """, identifier: [parser: true])
+  Pegasus.parser_from_string(
+    """
+    identifier <- 'foo' IDENTIFIER  # plus a comment, why not
+    IDENTIFIER <- 'bar'
+    """,
+    identifier: [parser: true]
+  )
 
   describe "identifiers work" do
     test "identifier" do
@@ -170,7 +175,7 @@ defmodule PegasusTest do
       ]
     )
 
-    defp post_traverse_grouped("", ["fooa"], context, {1, 0}, 4, :test) do
+    defp post_traverse_grouped("", [?a, "foo"], context, {1, 0}, 4, :test) do
       {"", [], Map.put(context, :parsed, true)}
     end
 
@@ -179,20 +184,19 @@ defmodule PegasusTest do
       assert {:ok, [], "", %{parsed: true}, _, _} = result
     end
 
-    Pegasus.parser_from_string("post_traverse_tagged <- <'foo' [a-z]> 'bar'",
-      post_traverse_tagged: [
+    Pegasus.parser_from_string("post_traverse_extracted <- <'foo' [a-z]> 'bar'",
+      post_traverse_extracted: [
         parser: true,
-        post_traverse: {:post_traverse_tagged, [:test]}
+        post_traverse: {:post_traverse_extracted, [:test]}
       ]
     )
 
-    defp post_traverse_tagged("", ["fooa"], context, {1, 0}, 4, :test) do
+    defp post_traverse_extracted("", ["fooa"], context, {1, 0}, _, :test) do
       {"", [], Map.put(context, :parsed, true)}
     end
 
-    @tag [skip: true]
     test "tagged content is merged and isolated" do
-      result = assert_parsed(post_traverse_tagged("fooabar"))
+      result = assert_parsed(post_traverse_extracted("fooabar"))
       assert {:ok, [], "", %{parsed: true}, _, _} = result
     end
   end

@@ -45,7 +45,7 @@ defmodule Pegasus.Primary do
       |> ignore(Tokens.close()),
       :collect
     )
-    |> post_traverse({__MODULE__, :_group, [:grouped]})
+    |> post_traverse({__MODULE__, :_group, [:ungroup]})
   end
 
   defp tagged_expression do
@@ -55,14 +55,10 @@ defmodule Pegasus.Primary do
       |> ignore(Tokens.ender()),
       :collect
     )
-    |> post_traverse({__MODULE__, :_group, [:tagged]})
+    |> post_traverse({__MODULE__, :_group, [:extract]})
   end
 
-  def _group(rest, [{:collect, [inner_args]} | args_rest], context, _, _, :grouped) do
-    {rest, [{:grouped, inner_args} | args_rest], context}
-  end
-
-  def _group(rest, [{:collect, [inner_args]} | args_rest], context, _, _, :tagged) do
-    {rest, [{:tagged, inner_args} | args_rest], context}
+  def _group(rest, [{:collect, [inner_args]} | args_rest], context, _, _, action) do
+    {rest, [{action, inner_args} | args_rest], context}
   end
 end

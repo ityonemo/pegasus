@@ -16,11 +16,10 @@ defmodule Pegasus do
   end
   ```
 
-  See `NimbleParsec` for the description of the output.  Note that the arguments for the function
-  will be tagged with the combinator name.
+  See `NimbleParsec` for the description of the output.
 
   ```
-  MyModule.foo("foobar") # ==> {:ok, [foo: ["foo", "bar"]]}
+  MyModule.foo("foobar") # ==> {:ok, ["foo", "bar"], ...}
   ```
 
   > #### Capitalized Identifiers {: .warning}
@@ -41,7 +40,32 @@ defmodule Pegasus do
 
   You may also load a parser from a file using `parser_from_file/2`.
 
-  ### Post-Traversals
+  ## Parser Options
+
+  Parser options are passed as a keyword list after the parser defintion
+  string (or file).  The keys for the options are the names of the combinators,
+  followed by a keyword list of supplied options:
+
+  ### `:tag`
+
+  You may tag the contents of your combinator using the `:tag` option.  The
+  following conditions apply:
+
+  - `tag: false` - No tag (default)
+  - `tag: true` - Use the combinator name as the tag.
+  - `tag: <atom>` - Use the supplied atom as the tag.
+
+  ### `:collect`
+
+  You may collect the contents of a combinator using the `collect: true` option.
+  If this combinator calls other combinators, they must leave only iodata (no
+  tags, no tokens) in the arguments list.
+
+  ### `:token`
+
+  You may substitute the contents of any combinator with a token (usually an atom).
+
+  ### `:post_traverse`
 
   You may supply a post_traversal for any parser.  See `NimbleParsec` for how to
   implement post-traversal functions.  These are defined by passing a keyword list
@@ -61,7 +85,7 @@ defmodule Pegasus do
   end
   ```
 
-  ### Parser
+  ### `:parser`
 
   You may sepecify to export a combinator as a parser by specifying `parser: true`.
   By default, only a combinator will be generated.  See `NimbleParsec.defparsec/3`
@@ -76,7 +100,7 @@ defmodule Pegasus do
   )
   ```
 
-  ### Exports
+  ### `:export`
 
   You may sepecify to export a combinator as a public function by specifying `export: true`.
   By default, the combinators are private functions.
@@ -90,9 +114,10 @@ defmodule Pegasus do
   )
   ```
 
-  ### Not implemented
+  ## Not implemented features
 
-  Actions, which imply the use of C code, are not implemented.
+  Actions, which imply the use of C code, are not implemented.  These currently fail to parse
+  but in the future they may silently do nothing.
   """
 
   import NimbleParsec
@@ -122,16 +147,19 @@ defmodule Pegasus do
 
       for {name, defn} <- Pegasus.Ast.to_nimble_parsec(ast, opts) do
         name_opts = Keyword.get(opts, name, [])
-        exported = !! Keyword.get(name_opts, :export)
-        parser = !! Keyword.get(name_opts, :parser)
+        exported = !!Keyword.get(name_opts, :export)
+        parser = !!Keyword.get(name_opts, :parser)
 
         case {exported, parser} do
           {false, false} ->
             NimbleParsec.defcombinatorp(name, defn)
+
           {false, true} ->
             NimbleParsec.defparsecp(name, defn)
+
           {true, false} ->
             NimbleParsec.defcombinator(name, defn)
+
           {true, true} ->
             NimbleParsec.defparsec(name, defn)
         end
