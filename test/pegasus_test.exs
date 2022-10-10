@@ -195,9 +195,50 @@ defmodule PegasusTest do
       {"", [], Map.put(context, :parsed, true)}
     end
 
-    test "tagged content is merged and isolated" do
+    test "extracted content is merged and isolated" do
       result = assert_parsed(post_traverse_extracted("fooabar"))
       assert {:ok, [], "", %{parsed: true}, _, _} = result
+    end
+  end
+
+  describe "tagging" do
+    Pegasus.parser_from_string("tagged_true <- 'foo' [a-z]", tagged_true: [parser: true, tag: true])
+
+    test "set to the parser name when true" do
+      result = assert_parsed(tagged_true("fooa"))
+      assert {:ok, [tagged_true: ["foo", ?a]], "", %{}, _, _} = result
+    end
+
+    Pegasus.parser_from_string("tagged_name <- 'foo' [a-z]", tagged_name: [parser: true, tag: :name])
+
+    test "customizable" do
+      result = assert_parsed(tagged_name("fooa"))
+      assert {:ok, [name: ["foo", ?a]], "", %{}, _, _} = result
+    end
+  end
+
+  describe "collected" do
+    Pegasus.parser_from_string("collecting <- 'foo' [a-z]", collecting: [parser: true, collect: true])
+
+    test "content is merged and isolated" do
+      result = assert_parsed(collecting("fooa"))
+      assert {:ok, ["fooa"], "", %{}, _, _} = result
+    end
+  end
+
+  describe "tokening" do
+    Pegasus.parser_from_string("token_true <- 'foo' [a-z]", token_true: [parser: true, token: true])
+
+    test "set to the parser name when true" do
+      result = assert_parsed(token_true("fooa"))
+      assert {:ok, [:token_true], "", %{}, _, _} = result
+    end
+
+    Pegasus.parser_from_string("token_name <- 'foo' [a-z]", token_name: [parser: true, token: :name])
+
+    test "customizable" do
+      result = assert_parsed(token_name("fooa"))
+      assert {:ok, [:name], "", %{}, _, _} = result
     end
   end
 end

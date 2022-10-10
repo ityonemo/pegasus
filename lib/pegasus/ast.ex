@@ -18,6 +18,8 @@ defmodule Pegasus.Ast do
       parser_ast
       |> from_sequence()
       |> extract_tag()
+      |> maybe_collect(name_opts)
+      |> maybe_token(name, name_opts)
       |> maybe_tag(name, name_opts)
       |> maybe_post_traverse(name_opts)
 
@@ -35,8 +37,20 @@ defmodule Pegasus.Ast do
     end
   end
 
-  def inspect(rest, args, context, _, _) do
-    {rest, IO.inspect(args), context}
+  defp maybe_collect(parsec, name_opts) do
+    if Keyword.get(name_opts, :collect) do
+      reduce(parsec, {IO, :iodata_to_binary, []})
+    else
+      parsec
+    end
+  end
+
+  defp maybe_token(parsec, name, name_opts) do
+    case Keyword.get(name_opts, :token, false) do
+      false -> parsec
+      true -> parsec |> tag(name) |> map({Kernel, :elem, [0]})
+      token -> parsec |> tag(token) |> map({Kernel, :elem, [0]})
+    end
   end
 
   defp maybe_tag(parsec, name, name_opts) do
@@ -133,9 +147,10 @@ defmodule Pegasus.Ast do
       |> from_sequence
       |> extract_tag
 
-    tagged = so_far
-    |> reduce(operations, {IO, :iodata_to_binary, []})
-    |> tag(:__tag__)
+    tagged =
+      so_far
+      |> reduce(operations, {IO, :iodata_to_binary, []})
+      |> tag(:__tag__)
 
     {tagged, %{context | tagged: true}}
   end

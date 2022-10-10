@@ -44,16 +44,8 @@ defmodule Pegasus do
 
   Parser options are passed as a keyword list after the parser defintion
   string (or file).  The keys for the options are the names of the combinators,
-  followed by a keyword list of supplied options:
-
-  ### `:tag`
-
-  You may tag the contents of your combinator using the `:tag` option.  The
-  following conditions apply:
-
-  - `tag: false` - No tag (default)
-  - `tag: true` - Use the combinator name as the tag.
-  - `tag: <atom>` - Use the supplied atom as the tag.
+  followed by a keyword list of supplied options, which are applied in the
+  specified order:
 
   ### `:collect`
 
@@ -64,6 +56,20 @@ defmodule Pegasus do
   ### `:token`
 
   You may substitute the contents of any combinator with a token (usually an atom).
+  The following conditions apply:
+
+  - `token: false` - no token (default)
+  - `token: true` - token is set to the atom name of the combinator
+  - `token: <value>` - token is set to the value of setting
+
+  ### `:tag`
+
+  You may tag the contents of your combinator using the `:tag` option.  The
+  following conditions apply:
+
+  - `tag: false` - No tag (default)
+  - `tag: true` - Use the combinator name as the tag.
+  - `tag: <atom>` - Use the supplied atom as the tag.
 
   ### `:post_traverse`
 
