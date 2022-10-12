@@ -13,4 +13,16 @@ defmodule PegasusTest.RegressionTest do
       refute_parsed(slash("a"))
     end
   end
+
+  Pegasus.parser_from_string(~S"""
+  STRINGLITERALSINGLE <- "\"" string_char* "\""
+  string_char <- [^\\"\n]
+  """,
+  STRINGLITERALSINGLE: [parser: :string_literal])
+
+  describe "string literal works" do
+    test "optional, not used" do
+      assert_parsed(string_literal(~S("string_literal")))
+    end
+  end
 end

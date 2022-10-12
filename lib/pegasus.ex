@@ -158,7 +158,7 @@ defmodule Pegasus do
       for {name, defn} <- Pegasus.Ast.to_nimble_parsec(ast, opts) do
         name_opts = Keyword.get(opts, name, [])
         exported = !!Keyword.get(name_opts, :export)
-        parser = !!Keyword.get(name_opts, :parser)
+        parser = Keyword.get(name_opts, :parser, false)
 
         case {exported, parser} do
           {false, false} ->
@@ -167,11 +167,17 @@ defmodule Pegasus do
           {false, true} ->
             NimbleParsec.defparsecp(name, defn)
 
+          {false, parser_name} ->
+            NimbleParsec.defparsecp(parser_name, defn)
+
           {true, false} ->
             NimbleParsec.defcombinator(name, defn)
 
           {true, true} ->
             NimbleParsec.defparsec(name, defn)
+
+          {true, parser_name} ->
+            NimbleParsec.defparsec(parser_name, defn)
         end
       end
     end
