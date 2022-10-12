@@ -202,14 +202,18 @@ defmodule PegasusTest do
   end
 
   describe "tagging" do
-    Pegasus.parser_from_string("tagged_true <- 'foo' [a-z]", tagged_true: [parser: true, tag: true])
+    Pegasus.parser_from_string("tagged_true <- 'foo' [a-z]",
+      tagged_true: [parser: true, tag: true]
+    )
 
     test "set to the parser name when true" do
       result = assert_parsed(tagged_true("fooa"))
       assert {:ok, [tagged_true: ["foo", ?a]], "", %{}, _, _} = result
     end
 
-    Pegasus.parser_from_string("tagged_name <- 'foo' [a-z]", tagged_name: [parser: true, tag: :name])
+    Pegasus.parser_from_string("tagged_name <- 'foo' [a-z]",
+      tagged_name: [parser: true, tag: :name]
+    )
 
     test "customizable" do
       result = assert_parsed(tagged_name("fooa"))
@@ -218,7 +222,9 @@ defmodule PegasusTest do
   end
 
   describe "collected" do
-    Pegasus.parser_from_string("collecting <- 'foo' [a-z]", collecting: [parser: true, collect: true])
+    Pegasus.parser_from_string("collecting <- 'foo' [a-z]",
+      collecting: [parser: true, collect: true]
+    )
 
     test "content is merged and isolated" do
       result = assert_parsed(collecting("fooa"))
@@ -227,18 +233,38 @@ defmodule PegasusTest do
   end
 
   describe "tokening" do
-    Pegasus.parser_from_string("token_true <- 'foo' [a-z]", token_true: [parser: true, token: true])
+    Pegasus.parser_from_string("token_true <- 'foo' [a-z]",
+      token_true: [parser: true, token: true]
+    )
 
     test "set to the parser name when true" do
       result = assert_parsed(token_true("fooa"))
       assert {:ok, [:token_true], "", %{}, _, _} = result
     end
 
-    Pegasus.parser_from_string("token_name <- 'foo' [a-z]", token_name: [parser: true, token: :name])
+    Pegasus.parser_from_string("token_name <- 'foo' [a-z]",
+      token_name: [parser: true, token: :name]
+    )
 
     test "customizable" do
       result = assert_parsed(token_name("fooa"))
       assert {:ok, [:name], "", %{}, _, _} = result
+    end
+  end
+
+  describe "ignore" do
+    Pegasus.parser_from_string(
+      """
+      ignore_outside <- 'foo' ignore_inside
+      ignore_inside <- 'bar'
+      """,
+      ignore_outside: [parser: true],
+      ignore_inside: [ignore: true]
+    )
+
+    test "ignores when you expectwhen true" do
+      result = assert_parsed(ignore_outside("foobar"))
+      assert {:ok, ["foo"], "", %{}, _, _} = result
     end
   end
 end

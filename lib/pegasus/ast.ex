@@ -22,6 +22,7 @@ defmodule Pegasus.Ast do
       |> maybe_token(name, name_opts)
       |> maybe_tag(name, name_opts)
       |> maybe_post_traverse(name_opts)
+      |> maybe_ignore(name_opts)
 
     {name, parser}
   end
@@ -64,6 +65,14 @@ defmodule Pegasus.Ast do
   defp maybe_post_traverse(parsec, name_opts) do
     if post_traverse = Keyword.get(name_opts, :post_traverse) do
       post_traverse(parsec, post_traverse)
+    else
+      parsec
+    end
+  end
+
+  defp maybe_ignore(parsec, name_opts) do
+    if Keyword.get(name_opts, :ignore) do
+      ignore(parsec)
     else
       parsec
     end

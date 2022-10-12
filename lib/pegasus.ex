@@ -77,6 +77,10 @@ defmodule Pegasus do
   implement post-traversal functions.  These are defined by passing a keyword list
   to the `parser_from_file/2` or `parser_from_string/2` function.
 
+  ### `:ignore`
+
+  If true, clears the arguments from the list.
+
   #### Example
 
   ```
