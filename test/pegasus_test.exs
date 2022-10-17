@@ -262,9 +262,29 @@ defmodule PegasusTest do
       ignore_inside: [ignore: true]
     )
 
-    test "ignores when you expectwhen true" do
+    test "ignores when you expect when true" do
       result = assert_parsed(ignore_outside("foobar"))
       assert {:ok, ["foo"], "", %{}, _, _} = result
+    end
+  end
+
+  describe "start_pos" do
+    Pegasus.parser_from_string("""
+      start_pos <- 'foo' needs_pos
+      needs_pos <- 'bar'
+      """,
+      start_pos: [parser: true],
+      needs_pos: [start_pos: true, post_traverse: :post_traverse_start_pos]
+    )
+
+    @context_info %{line: 1, col: 4, offset: 4}
+
+    defp post_traverse_start_pos("", ["bar", context = @context_info, "foo"], _, _, _) do
+      {"", [], context}
+    end
+
+    test "can be given a start position" do
+      assert @context_info = assert_parsed(start_pos("foobar"))
     end
   end
 end
