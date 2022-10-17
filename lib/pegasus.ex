@@ -155,29 +155,29 @@ defmodule Pegasus do
     quote bind_quoted: [ast: ast, opts: opts] do
       require NimbleParsec
 
-      for {name, defn} <- Pegasus.Ast.to_nimble_parsec(ast, opts) do
+      for %{name: name, parsec: parsec} <- Pegasus.Ast.to_nimble_parsec(ast, opts) do
         name_opts = Keyword.get(opts, name, [])
         exported = !!Keyword.get(name_opts, :export)
         parser = Keyword.get(name_opts, :parser, false)
 
         case {exported, parser} do
           {false, false} ->
-            NimbleParsec.defcombinatorp(name, defn)
+            NimbleParsec.defcombinatorp(name, parsec)
 
           {false, true} ->
-            NimbleParsec.defparsecp(name, defn)
+            NimbleParsec.defparsecp(name, parsec)
 
           {false, parser_name} ->
-            NimbleParsec.defparsecp(parser_name, defn)
+            NimbleParsec.defparsecp(parser_name, parsec)
 
           {true, false} ->
-            NimbleParsec.defcombinator(name, defn)
+            NimbleParsec.defcombinator(name, parsec)
 
           {true, true} ->
-            NimbleParsec.defparsec(name, defn)
+            NimbleParsec.defparsec(name, parsec)
 
           {true, parser_name} ->
-            NimbleParsec.defparsec(parser_name, defn)
+            NimbleParsec.defparsec(parser_name, parsec)
         end
       end
     end

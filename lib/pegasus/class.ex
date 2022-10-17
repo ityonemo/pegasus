@@ -31,12 +31,14 @@ defmodule Pegasus.Class do
   end
 
   def to_parser(rest, [{:class, args} | args_rest], context, _, _) do
-    classes = case args do
-      ["^" | rest] ->
-        Enum.map(rest, &{:not, &1})
-      args ->
-        args
-    end
+    classes =
+      case args do
+        ["^" | rest] ->
+          Enum.map(rest, &{:not, &1})
+
+        args ->
+          args
+      end
 
     {rest, [{:char, classes} | args_rest], context}
   end

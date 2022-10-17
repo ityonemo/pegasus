@@ -14,11 +14,13 @@ defmodule PegasusTest.RegressionTest do
     end
   end
 
-  Pegasus.parser_from_string(~S"""
-  STRINGLITERALSINGLE <- "\"" string_char* "\""
-  string_char <- [^\\"\n]
-  """,
-  STRINGLITERALSINGLE: [parser: :string_literal])
+  Pegasus.parser_from_string(
+    ~S"""
+    STRINGLITERALSINGLE <- "\"" string_char* "\""
+    string_char <- [^\\"\n]
+    """,
+    STRINGLITERALSINGLE: [parser: :string_literal]
+  )
 
   describe "string literal works" do
     test "optional, not used" do

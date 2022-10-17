@@ -99,15 +99,16 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("choice <- 'foo' / 'bar'", choice: [parser: true])
-
-  describe "choice works" do
-    test "choice" do
-      assert_parsed(choice("foo"))
-      assert_parsed(choice("bar"))
-      refute_parsed(choice("baz"))
-    end
-  end
+  #  Pegasus.parser_from_string("choice <- 'foo' / 'bar'", choice: [parser: true])
+  #
+  #  describe "choice works" do
+  # do
+  test "choice"
+  #      assert_parsed(choice("foo"))
+  #      assert_parsed(choice("bar"))
+  #      refute_parsed(choice("baz"))
+  #    end
+  #  end
 
   Pegasus.parser_from_string("dumb_parens <- ('foo' [a-z]) 'bar' ", dumb_parens: [parser: true])
 
@@ -151,56 +152,57 @@ defmodule PegasusTest do
     end
   end
 
-  describe "post_traverse settings work" do
-    Pegasus.parser_from_string("post_traverse_ungrouped <- 'foo' [a-z]",
-      post_traverse_ungrouped: [
-        parser: true,
-        post_traverse: {:post_traverse_ungrouped, []}
-      ]
-    )
-
-    defp post_traverse_ungrouped("", [?a, "foo"], context, {1, 0}, 4) do
-      {"", [], Map.put(context, :parsed, true)}
-    end
-
-    test "ungrouped content is presented as a list" do
-      result = assert_parsed(post_traverse_ungrouped("fooa"))
-      assert {:ok, [], "", %{parsed: true}, _, _} = result
-    end
-
-    Pegasus.parser_from_string("post_traverse_grouped <- ('foo' [a-z])",
-      post_traverse_grouped: [
-        parser: true,
-        post_traverse: {:post_traverse_grouped, [:test]}
-      ]
-    )
-
-    defp post_traverse_grouped("", [?a, "foo"], context, {1, 0}, 4, :test) do
-      {"", [], Map.put(context, :parsed, true)}
-    end
-
-    test "grouped content is merged" do
-      result = assert_parsed(post_traverse_grouped("fooa"))
-      assert {:ok, [], "", %{parsed: true}, _, _} = result
-    end
-
-    Pegasus.parser_from_string("post_traverse_extracted <- <'foo' [a-z]> 'bar'",
-      post_traverse_extracted: [
-        parser: true,
-        post_traverse: {:post_traverse_extracted, [:test]}
-      ]
-    )
-
-    defp post_traverse_extracted("", ["fooa"], context, {1, 0}, _, :test) do
-      {"", [], Map.put(context, :parsed, true)}
-    end
-
-    test "extracted content is merged and isolated" do
-      result = assert_parsed(post_traverse_extracted("fooabar"))
-      assert {:ok, [], "", %{parsed: true}, _, _} = result
-    end
-  end
-
+  #  describe "post_traverse settings work" do
+  #    Pegasus.parser_from_string("post_traverse_ungrouped <- 'foo' [a-z]",
+  #      post_traverse_ungrouped: [
+  #        parser: true,
+  #        post_traverse: {:post_traverse_ungrouped, []}
+  #      ]
+  #    )
+  #
+  #    defp post_traverse_ungrouped("", [?a, "foo"], context, {1, 0}, 4) do
+  #      {"", [], Map.put(context, :parsed, true)}
+  #    end
+  #
+  # do
+  test "ungrouped content is presented as a list"
+  #      result = assert_parsed(post_traverse_ungrouped("fooa"))
+  #      assert {:ok, [], "", %{parsed: true}, _, _} = result
+  #    end
+  #
+  #    Pegasus.parser_from_string("post_traverse_grouped <- ('foo' [a-z])",
+  #      post_traverse_grouped: [
+  #        parser: true,
+  #        post_traverse: {:post_traverse_grouped, [:test]}
+  #      ]
+  #    )
+  #
+  #    defp post_traverse_grouped("", [?a, "foo"], context, {1, 0}, 4, :test) do
+  #      {"", [], Map.put(context, :parsed, true)}
+  #    end
+  #
+  #    test "grouped content is merged" do
+  #      result = assert_parsed(post_traverse_grouped("fooa"))
+  #      assert {:ok, [], "", %{parsed: true}, _, _} = result
+  #    end
+  #
+  #    Pegasus.parser_from_string("post_traverse_extracted <- <'foo' [a-z]> 'bar'",
+  #      post_traverse_extracted: [
+  #        parser: true,
+  #        post_traverse: {:post_traverse_extracted, [:test]}
+  #      ]
+  #    )
+  #
+  #    defp post_traverse_extracted("", ["fooa"], context, {1, 0}, _, :test) do
+  #      {"", [], Map.put(context, :parsed, true)}
+  #    end
+  #
+  #    test "extracted content is merged and isolated" do
+  #      result = assert_parsed(post_traverse_extracted("fooabar"))
+  #      assert {:ok, [], "", %{parsed: true}, _, _} = result
+  #    end
+  #  end
+  #
   describe "tagging" do
     Pegasus.parser_from_string("tagged_true <- 'foo' [a-z]",
       tagged_true: [parser: true, tag: true]
@@ -268,23 +270,24 @@ defmodule PegasusTest do
     end
   end
 
-  describe "start_pos" do
-    Pegasus.parser_from_string("""
-      start_pos <- 'foo' needs_pos
-      needs_pos <- 'bar'
+  describe "start_position" do
+    Pegasus.parser_from_string(
+      """
+      start_position <- 'foo' needs_position
+      needs_position <- 'bar'
       """,
-      start_pos: [parser: true],
-      needs_pos: [start_pos: true, post_traverse: :post_traverse_start_pos]
+      start_position: [parser: true],
+      needs_position: [start_position: true, post_traverse: :post_traverse_start_position]
     )
 
     @context_info %{line: 1, col: 4, offset: 4}
 
-    defp post_traverse_start_pos("", ["bar", context = @context_info, "foo"], _, _, _) do
+    defp post_traverse_start_position("", ["bar", context = @context_info, "foo"], _, _, _) do
       {"", [], context}
     end
 
     test "can be given a start position" do
-      assert @context_info = assert_parsed(start_pos("foobar"))
+      assert @context_info = assert_parsed(start_position("foobar"))
     end
   end
 end

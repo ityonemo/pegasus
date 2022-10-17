@@ -1,7 +1,9 @@
 defmodule Pegasus.Ast do
   import NimbleParsec
 
-  defstruct tagged: false
+  @enforce_keys [:name]
+
+  defstruct @enforce_keys ++ [:ast, position_traversal?: false, tagged?: false, parsec: empty()]
 
   def to_nimble_parsec({:ok, list, "", _, _, _}, opts) do
     to_nimble_parsec(list, opts)
@@ -14,18 +16,23 @@ defmodule Pegasus.Ast do
   def to_nimble_parsec({name, parser_ast}, opts) do
     name_opts = Keyword.get(opts, name, [])
 
-    parser =
-      parser_ast
-      |> from_sequence()
-      |> extract_tag()
-      |> maybe_collect(name_opts)
-      |> maybe_token(name, name_opts)
-      |> maybe_tag(name, name_opts)
-      |> maybe_post_traverse(name_opts)
-      |> maybe_ignore(name_opts)
+    %__MODULE__{name: name, ast: parser_ast}
+    |> from_sequence()
 
-    {name, parser}
+    # |> maybe_add_position(name_opts)
+    # |> extract_tag()
+    # |> maybe_collect(name_opts)
+    # |> maybe_token(name, name_opts)
+    # |> maybe_tag(name, name_opts)
+    # |> maybe_post_traverse(name_opts)
+    # |> maybe_ignore(name_opts)
   end
+
+  # defp maybe_add_position(parsec, name_opts) do
+  #  if Keyword.get(name_opts, :start_position) do
+  #
+  #  end
+  # end
 
   defp extract_tag({parsec, context}) do
     if Map.get(context, :tagged) do
@@ -78,94 +85,99 @@ defmodule Pegasus.Ast do
     end
   end
 
-  def from_sequence(parser_ast) do
-    Enum.reduce(parser_ast, {empty(), %__MODULE__{}}, &translate/2)
+  def from_sequence(context) do
+    Enum.reduce(context.ast, context, &translate/2)
   end
 
-  defp translate(:dot, {so_far, context}) do
-    {utf8_char(so_far, not: 0), context}
+  defp translate(:dot, context) do
+    %{context | parsec: utf8_char(context.parsec, not: 0)}
   end
 
-  defp translate({:char, ranges}, {so_far, context}) do
-    {utf8_char(so_far, ranges), context}
+  defp translate({:char, ranges}, context) do
+    %{context | parsec: utf8_char(context.parsec, ranges)}
   end
 
-  defp translate({:literal, literal}, {so_far, context}) do
-    {string(so_far, literal), context}
+  defp translate({:literal, literal}, context) do
+    %{context | parsec: string(context.parsec, literal)}
   end
 
-  defp translate({:lookahead, content}, {so_far, context}) do
-    {parser, new_context} = ungroup(content, context)
-    {lookahead(so_far, parser), new_context}
+  # defp translate({:lookahead, content}, context) do
+  #  {parser, new_context} = ungroup(content, context)
+  #  %{new_context | parsec: lookahead(context.parsec, parser)}
+  # end
+
+  # defp translate({:lookahead_not, content}, context) do
+  #  {parser, new_context} = ungroup(content, context)
+  #  %{new_context | parsec: lookahead_not(context.parsec, parser)}
+  # end
+
+  # defp translate({:optional, content}, context) do
+  #  {parser, new_context} = ungroup(content, context)
+  #  %{new_context | parsec: optional(context.parsec, parser)}
+  # end
+
+  # defp translate({:repeat, content}, context) do
+  #  {parser, new_context} = ungroup(content, context)
+  #  %{new_context | parsec: repeat(context.parsec, parser)}
+  # end
+
+  # defp translate({:times, content}, context) do
+  #  {parser, new_context} = ungroup(content, context)
+  #  %{new_context | parsec: times(context.parsec, parser, min: 1)}
+  # end
+
+  defp translate({:identifier, identifier}, context) do
+    %{context | parsec: parsec(context.parsec, identifier)}
   end
 
-  defp translate({:lookahead_not, content}, {so_far, context}) do
-    {parser, new_context} = ungroup(content, context)
-    {lookahead_not(so_far, parser), new_context}
-  end
-
-  defp translate({:optional, content}, {so_far, context}) do
-    {parser, new_context} = ungroup(content, context)
-    {optional(so_far, parser), new_context}
-  end
-
-  defp translate({:repeat, content}, {so_far, context}) do
-    {parser, new_context} = ungroup(content, context)
-    {repeat(so_far, parser), new_context}
-  end
-
-  defp translate({:times, content}, {so_far, context}) do
-    {parser, new_context} = ungroup(content, context)
-    {times(so_far, parser, min: 1), new_context}
-  end
-
-  defp translate({:identifier, identifier}, {so_far, context}) do
-    {parsec(so_far, identifier), context}
-  end
-
-  defp translate({:choice, list_of_choices}, {so_far, context}) do
-    {choices, new_context} = Enum.reduce(list_of_choices, {[], context}, &reduce_choices/2)
-    {choice(so_far, Enum.reverse(choices)), new_context}
-  end
+  # defp translate({:choice, list_of_choices}, context) do
+  #  {choices, new_context} = Enum.reduce(list_of_choices, {[], context}, &reduce_choices/2)
+  #  %{new_context | parsec: choice(context.parsec, Enum.reverse(choices))}
+  # end
 
   @group_actions ~w(ungroup extract)a
 
-  defp translate(grouped = {action, _}, {so_far, context}) when action in @group_actions do
-    ungroup(so_far, grouped, context)
+  # defp translate(grouped = {action, _}, context) when action in @group_actions do
+  #  {parser, new_context} = ungroup(context.parsec, grouped, context)
+  #  %{new_context | parsec: parser}
+  # end
+
+  defp translate(_, context) do
+    # TODO: remove this after refactoring
+    context
   end
 
-  defp reduce_choices(choice, {so_far, context}) do
-    {compiled_choice, new_context} = from_sequence(choice)
-    {[compiled_choice | so_far], %{context | tagged: context.tagged or new_context.tagged}}
-  end
+  # defp reduce_choices(choice, {so_far, context}) do
+  #  {compiled_choice, new_context} = from_sequence(choice)
+  #  {[compiled_choice | so_far], %{context | tagged: context.tagged or new_context.tagged}}
+  # end
 
-  defp ungroup(so_far \\ empty(), grouping, context)
-
-  defp ungroup(so_far, {:ungroup, grouped}, context) do
-    operations =
-      grouped
-      |> from_sequence
-      |> extract_tag
-
-    {concat(so_far, operations), context}
-  end
-
-  defp ungroup(so_far, {:extract, grouped}, context) do
-    operations =
-      grouped
-      |> from_sequence
-      |> extract_tag
-
-    tagged =
-      so_far
-      |> reduce(operations, {IO, :iodata_to_binary, []})
-      |> tag(:__tag__)
-
-    {tagged, %{context | tagged: true}}
-  end
-
-  defp ungroup(so_far, ungrouped, context) do
-    {parser, new_context} = translate(ungrouped, {empty(), context})
-    {concat(so_far, parser), new_context}
-  end
+  # defp ungroup(so_far \\ empty(), grouping, context)
+  #
+  # defp ungroup(so_far, {:ungroup, grouped}, context) do
+  #  operations =
+  #    grouped
+  #    |> from_sequence
+  #    |> extract_tag
+  #
+  #  {concat(so_far, operations), context}
+  # end
+  #
+  # defp ungroup(so_far, {:extract, grouped}, context) do
+  #  operations =
+  #    grouped
+  #    |> from_sequence
+  #    |> extract_tag
+  #
+  #  tagged =
+  #    so_far
+  #    |> reduce(operations, {IO, :iodata_to_binary, []})
+  #    |> tag(:__tag__)
+  #
+  #  {tagged, %{context | tagged: true}}
+  # end
+  #
+  # defp ungroup(so_far, ungrouped, context) do
+  #  raise "foo"
+  # end
 end
