@@ -47,6 +47,11 @@ defmodule Pegasus do
   followed by a keyword list of supplied options, which are applied in the
   specified order:
 
+  ### `:start_position`
+
+  When true, drops a map `%{line: <line>, column: <column>, offset: <offset>}` into
+  the arguments for this keyword at the front of its list.
+
   ### `:collect`
 
   You may collect the contents of a combinator using the `collect: true` option.
@@ -154,11 +159,14 @@ defmodule Pegasus do
   defmacro parser_from_ast(ast, opts) do
     quote bind_quoted: [ast: ast, opts: opts] do
       require NimbleParsec
+      require Pegasus.Ast
 
-      for %{name: name, parsec: parsec} <- Pegasus.Ast.to_nimble_parsec(ast, opts) do
+      for ast = %{name: name, parsec: parsec} <- Pegasus.Ast.to_nimble_parsec(ast, opts) do
         name_opts = Keyword.get(opts, name, [])
         exported = !!Keyword.get(name_opts, :export)
         parser = Keyword.get(name_opts, :parser, false)
+
+        Pegasus.Ast.traversals(ast)
 
         case {exported, parser} do
           {false, false} ->

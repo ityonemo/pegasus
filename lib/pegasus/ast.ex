@@ -3,7 +3,9 @@ defmodule Pegasus.Ast do
 
   @enforce_keys [:name]
 
-  defstruct @enforce_keys ++ [:ast, position_traversal?: false, tagged?: false, parsec: empty()]
+  defstruct @enforce_keys ++ [:extract, start_pos?: false, parsec: empty()]
+
+  @dummy_context %{parsec: empty()}
 
   def to_nimble_parsec({:ok, list, "", _, _, _}, opts) do
     to_nimble_parsec(list, opts)
@@ -16,77 +18,89 @@ defmodule Pegasus.Ast do
   def to_nimble_parsec({name, parser_ast}, opts) do
     name_opts = Keyword.get(opts, name, [])
 
-    %__MODULE__{name: name, ast: parser_ast}
-    |> from_sequence()
-
-    # |> maybe_add_position(name_opts)
-    # |> extract_tag()
-    # |> maybe_collect(name_opts)
-    # |> maybe_token(name, name_opts)
-    # |> maybe_tag(name, name_opts)
-    # |> maybe_post_traverse(name_opts)
-    # |> maybe_ignore(name_opts)
+    %__MODULE__{name: name}
+    |> maybe_add_position(name_opts)
+    |> translate_sequence(parser_ast)
+    |> maybe_extract()
+    |> maybe_collect(name_opts)
+    |> maybe_token(name, name_opts)
+    |> maybe_tag(name, name_opts)
+    |> maybe_post_traverse(name_opts)
+    |> maybe_ignore(name_opts)
   end
 
-  # defp maybe_add_position(parsec, name_opts) do
-  #  if Keyword.get(name_opts, :start_position) do
-  #
-  #  end
-  # end
-
-  defp extract_tag({parsec, context}) do
-    if Map.get(context, :tagged) do
-      parsec
-      |> reduce({Enum, :find, [&is_tuple/1]})
-      |> map({Kernel, :elem, [1]})
-      |> map({IO, :iodata_to_binary, []})
+   defp maybe_add_position(context, name_opts) do
+    if Keyword.get(name_opts, :start_position) do
+      parsec = post_traverse(context.parsec, traversal_name(context.name, :start_pos))
+      %{context | parsec: parsec, start_pos?: true}
     else
-      parsec
+      context
+    end
+   end
+
+  defp maybe_extract(context) do
+    if context.extract == :extract do
+      %{context | parsec: post_traverse(context.parsec, traversal_name(context.name, :extract))}
+    else
+      context
     end
   end
 
-  defp maybe_collect(parsec, name_opts) do
+  defp maybe_collect(context, name_opts) do
     if Keyword.get(name_opts, :collect) do
-      reduce(parsec, {IO, :iodata_to_binary, []})
+      %{context | parsec: reduce(context.parsec, {IO, :iodata_to_binary, []})}
     else
-      parsec
+      context
     end
   end
 
-  defp maybe_token(parsec, name, name_opts) do
+  defp maybe_token(context = %{parsec: parsec}, name, name_opts) do
     case Keyword.get(name_opts, :token, false) do
-      false -> parsec
-      true -> parsec |> tag(name) |> map({Kernel, :elem, [0]})
-      token -> parsec |> tag(token) |> map({Kernel, :elem, [0]})
+      false ->
+        context
+
+      true ->
+        %{
+          context
+          | parsec: parsec |> tag(name) |> post_traverse(traversal_name(name, :tag)),
+            extract: :tag
+        }
+
+      token ->
+        %{
+          context
+          | parsec: parsec |> tag(token) |> post_traverse(traversal_name(name, :tag)),
+            extract: :tag
+        }
     end
   end
 
-  defp maybe_tag(parsec, name, name_opts) do
+  defp maybe_tag(context = %{parsec: parsec}, name, name_opts) do
     case Keyword.get(name_opts, :tag, false) do
-      false -> parsec
-      true -> tag(parsec, name)
-      tag -> tag(parsec, tag)
+      false -> context
+      true -> %{context | parsec: tag(parsec, name)}
+      tag -> %{context | parsec: tag(parsec, tag)}
     end
   end
 
-  defp maybe_post_traverse(parsec, name_opts) do
+  defp maybe_post_traverse(context, name_opts) do
     if post_traverse = Keyword.get(name_opts, :post_traverse) do
-      post_traverse(parsec, post_traverse)
+      %{context | parsec: post_traverse(context.parsec, post_traverse)}
     else
-      parsec
+      context
     end
   end
 
-  defp maybe_ignore(parsec, name_opts) do
+  defp maybe_ignore(context, name_opts) do
     if Keyword.get(name_opts, :ignore) do
-      ignore(parsec)
+      %{context | parsec: ignore(context.parsec)}
     else
-      parsec
+      context
     end
   end
 
-  def from_sequence(context) do
-    Enum.reduce(context.ast, context, &translate/2)
+  def translate_sequence(context, ast) do
+    Enum.reduce(ast, context, &translate/2)
   end
 
   defp translate(:dot, context) do
@@ -101,83 +115,92 @@ defmodule Pegasus.Ast do
     %{context | parsec: string(context.parsec, literal)}
   end
 
-  # defp translate({:lookahead, content}, context) do
-  #  {parser, new_context} = ungroup(content, context)
-  #  %{new_context | parsec: lookahead(context.parsec, parser)}
-  # end
+  defp translate({:lookahead, content}, context) do
+    %{parsec: lookahead} = translate(content, @dummy_context)
+    %{context | parsec: lookahead(context.parsec, lookahead)}
+  end
 
-  # defp translate({:lookahead_not, content}, context) do
-  #  {parser, new_context} = ungroup(content, context)
-  #  %{new_context | parsec: lookahead_not(context.parsec, parser)}
-  # end
+  defp translate({:lookahead_not, content}, context) do
+    %{parsec: lookahead_not} = translate(content, @dummy_context)
+    %{context | parsec: lookahead_not(context.parsec, lookahead_not)}
+  end
 
-  # defp translate({:optional, content}, context) do
-  #  {parser, new_context} = ungroup(content, context)
-  #  %{new_context | parsec: optional(context.parsec, parser)}
-  # end
+  defp translate({:optional, content}, context) do
+    %{parsec: optional} = translate(content, @dummy_context)
+    %{context | parsec: optional(context.parsec, optional)}
+  end
 
-  # defp translate({:repeat, content}, context) do
-  #  {parser, new_context} = ungroup(content, context)
-  #  %{new_context | parsec: repeat(context.parsec, parser)}
-  # end
+  defp translate({:repeat, content}, context) do
+    %{parsec: repeated} = translate(content, @dummy_context)
+    %{context | parsec: repeat(context.parsec, repeated)}
+  end
 
-  # defp translate({:times, content}, context) do
-  #  {parser, new_context} = ungroup(content, context)
-  #  %{new_context | parsec: times(context.parsec, parser, min: 1)}
-  # end
+  defp translate({:times, content}, context) do
+    %{parsec: repeated} = translate(content, @dummy_context)
+    %{context | parsec: times(context.parsec, repeated, min: 1)}
+  end
 
   defp translate({:identifier, identifier}, context) do
     %{context | parsec: parsec(context.parsec, identifier)}
   end
 
-  # defp translate({:choice, list_of_choices}, context) do
-  #  {choices, new_context} = Enum.reduce(list_of_choices, {[], context}, &reduce_choices/2)
-  #  %{new_context | parsec: choice(context.parsec, Enum.reverse(choices))}
-  # end
-
-  @group_actions ~w(ungroup extract)a
-
-  # defp translate(grouped = {action, _}, context) when action in @group_actions do
-  #  {parser, new_context} = ungroup(context.parsec, grouped, context)
-  #  %{new_context | parsec: parser}
-  # end
-
-  defp translate(_, context) do
-    # TODO: remove this after refactoring
-    context
+  defp translate({:choice, list_of_choices}, context) do
+    choices = Enum.map(list_of_choices, &translate_sequence(@dummy_context, &1).parsec)
+    %{context | parsec: choice(context.parsec, choices)}
   end
 
-  # defp reduce_choices(choice, {so_far, context}) do
-  #  {compiled_choice, new_context} = from_sequence(choice)
-  #  {[compiled_choice | so_far], %{context | tagged: context.tagged or new_context.tagged}}
-  # end
+  defp translate({:ungroup, commands}, context) do
+    grouped = translate_sequence(@dummy_context, commands)
+    %{context | parsec: concat(context.parsec, grouped.parsec)}
+  end
 
-  # defp ungroup(so_far \\ empty(), grouping, context)
-  #
-  # defp ungroup(so_far, {:ungroup, grouped}, context) do
-  #  operations =
-  #    grouped
-  #    |> from_sequence
-  #    |> extract_tag
-  #
-  #  {concat(so_far, operations), context}
-  # end
-  #
-  # defp ungroup(so_far, {:extract, grouped}, context) do
-  #  operations =
-  #    grouped
-  #    |> from_sequence
-  #    |> extract_tag
-  #
-  #  tagged =
-  #    so_far
-  #    |> reduce(operations, {IO, :iodata_to_binary, []})
-  #    |> tag(:__tag__)
-  #
-  #  {tagged, %{context | tagged: true}}
-  # end
-  #
-  # defp ungroup(so_far, ungrouped, context) do
-  #  raise "foo"
-  # end
+  defp translate({:extract, commands}, context) do
+    grouped = translate_sequence(@dummy_context, commands)
+    tagged = tag(grouped.parsec, :__extract__)
+    %{context | parsec: concat(context.parsec, tagged), extract: :extract}
+  end
+
+  def traversal_name(name, tag), do: :"#{name}-#{tag}"
+
+  defmacro traversals(ast) do
+    quote bind_quoted: [ast: ast] do
+      if ast.start_pos? do
+        start_pos_name = Pegasus.Ast.traversal_name(ast.name, :start_pos)
+        defp(unquote(start_pos_name)(rest, args, context, {line, offset}, col)) do
+          {rest, [%{line: line, column: col - offset + 1, offset: offset} | args], context}
+        end
+      end
+
+      case ast.extract do
+        :tag ->
+          extract_name = Pegasus.Ast.traversal_name(ast.name, :tag)
+
+          defp(unquote(extract_name)(rest, [{tag, _} | args_rest], context, _, _)) do
+            {rest, [tag | args_rest], context}
+          end
+
+        :extract ->
+          extract_name = Pegasus.Ast.traversal_name(ast.name, :extract)
+
+          defp unquote(extract_name)(rest, args, context, _, _) do
+            extracted =
+              Enum.flat_map(args, fn
+                {:__extract__, what} ->
+                  what
+                  |> Enum.filter(&(is_binary(&1) or &1 in 1..0x10FFFF))
+                  |> IO.iodata_to_binary()
+                  |> List.wrap()
+
+                _ ->
+                  []
+              end)
+
+            {rest, extracted, context}
+          end
+
+        _ ->
+          []
+      end
+    end
+  end
 end
