@@ -129,6 +129,20 @@ defmodule Pegasus do
   )
   ```
 
+  ### `:alias`
+
+  You may specify your own combinators to be run in place of what's in the grammar.
+  This is useful if the grammar is wrong or contains content that can't be run for
+  some reason.
+
+  #### Example
+
+  ```
+  Pegasus.parser_from_string(\"""
+    foo <- "foo"
+  \""", foo: [alias: :my_combinator])
+  ```
+
   ## Not implemented features
 
   Actions, which imply the use of C code, are not implemented.  These currently fail to parse

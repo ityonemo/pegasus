@@ -138,6 +138,10 @@ defmodule PegasusTest.ComponentsTest do
       assert_parsed(range(~S(\123-Z)), [0o123..?Z])
     end
 
+    test "produces a correct range matcher with octal" do
+      assert_parsed(range(~S(\141-\172)), [?a..?z])
+    end
+
     test "correctly parses a single char" do
       assert_parsed(range(~S(a)), [?a])
     end

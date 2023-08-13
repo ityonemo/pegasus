@@ -286,4 +286,21 @@ defmodule PegasusTest do
       assert_parsed(start_position("foobar"))
     end
   end
+
+  describe "alias" do
+    Pegasus.parser_from_string(
+      """
+      aliased <- "not correct"
+      """,
+      aliased: [parser: true, alias: :substitution]
+    )
+
+    import NimbleParsec
+
+    defcombinatorp :substitution, string("correct")
+
+    test "aliasing works" do
+      assert_parsed(aliased("correct"))
+    end
+  end
 end
