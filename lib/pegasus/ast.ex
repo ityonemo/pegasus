@@ -27,6 +27,7 @@ defmodule Pegasus.Ast do
     |> maybe_tag(name, name_opts)
     |> maybe_post_traverse(name_opts)
     |> maybe_ignore(name_opts)
+    |> maybe_alias(name_opts)
   end
 
    defp maybe_add_position(context, name_opts) do
@@ -94,6 +95,14 @@ defmodule Pegasus.Ast do
   defp maybe_ignore(context, name_opts) do
     if Keyword.get(name_opts, :ignore) do
       %{context | parsec: ignore(context.parsec)}
+    else
+      context
+    end
+  end
+
+  defp maybe_alias(context, name_opts) do
+    if substitution = Keyword.get(name_opts, :alias) do
+      %{context | parsec: parsec(substitution)}
     else
       context
     end
