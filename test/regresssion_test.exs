@@ -14,6 +14,49 @@ defmodule PegasusTest.RegressionTest do
     end
   end
 
+  Pegasus.parser_from_string(~S"""
+  hex <- [0-9a-fA-F]
+
+  char_escape
+    <- "\\x" hex hex
+     / "\\u{" hex+ "}"
+     / "\\" [nr\\t'"]
+  """, char_escape: [parser: true])
+
+  describe "char_escape" do
+    test "works with hex" do
+      assert_parsed(char_escape(~S"\x00"))
+    end
+
+    test "works with u" do
+      assert_parsed(char_escape(~S"\u{0a0a}"))
+    end
+
+    test "works with \\n" do
+      assert_parsed(char_escape(~S"\n"))
+    end
+
+    test "works with \\r" do
+      assert_parsed(char_escape(~S"\r"))
+    end
+
+    test "works with \\\\" do
+      assert_parsed(char_escape(~S"\\"))
+    end
+
+    test "works with \\t" do
+      assert_parsed(char_escape(~S"\t"))
+    end
+
+    test "works with \\'" do
+      assert_parsed(char_escape(~S"\'"))
+    end
+
+    test "works with \\\"" do
+      assert_parsed(char_escape(~S(\")))
+    end
+  end
+
   Pegasus.parser_from_string(
     ~S"""
     STRINGLITERALSINGLE <- "\"" string_char* "\""
