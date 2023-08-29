@@ -117,7 +117,7 @@ defmodule Pegasus.Ast do
   end
 
   defp translate({:char, ranges}, context) do
-    %{context | parsec: utf8_char(context.parsec, ranges)}
+    %{context | parsec: ascii_char(context.parsec, ranges)}
   end
 
   defp translate({:literal, literal}, context) do
