@@ -1,14 +1,14 @@
 defmodule Pegasus.Class do
-  @moduledoc """
-  Produces a "class" parser.
+  @moduledoc false
 
-  Note that the output of a "class" parser leaves a NimbleParsec parser in the
-  arguments list.
-
-  ```peg
-  Class           <- '[' < ( !']' Range )* > ']' Spacing
-  ```
-  """
+  # Produces a "class" parser.
+  #
+  # Note that the output of a "class" parser leaves a NimbleParsec parser in the
+  # arguments list.
+  #
+  # ```peg
+  # Class           <- '[' < ( !']' Range )* > ']' Spacing
+  # ```
 
   alias Pegasus.Components
 

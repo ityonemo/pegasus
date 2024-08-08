@@ -121,7 +121,9 @@ defmodule PegasusTest do
     end
   end
 
-  Pegasus.parser_from_string("times_parens <- ('foo' [a-z])+ 'bar' ", times_parens: [parser: true])
+  Pegasus.parser_from_string("times_parens <- ('foo' [a-z])+ 'bar' ",
+    times_parens: [parser: true]
+  )
 
   describe "smart parens work" do
     test "with times" do
@@ -297,7 +299,7 @@ defmodule PegasusTest do
 
     import NimbleParsec
 
-    defcombinatorp :substitution, string("correct")
+    defcombinatorp(:substitution, string("correct"))
 
     test "aliasing works" do
       assert_parsed(aliased("correct"))

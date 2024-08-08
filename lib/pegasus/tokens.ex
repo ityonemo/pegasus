@@ -1,22 +1,22 @@
 defmodule Pegasus.Tokens do
-  @moduledoc """
-  Collects together parsers for all of the minor tokens for Peg parsers
+  @moduledoc false
 
-  ```peg
-  LEFTARROW       <- '<-' Spacing
-  SLASH           <- '/' Spacing
-  AND             <- '&' Spacing
-  NOT             <- '!' Spacing
-  QUERY           <- '?' Spacing
-  STAR            <- '*' Spacing
-  PLUS            <- '+' Spacing
-  OPEN            <- '(' Spacing
-  CLOSE           <- ')' Spacing
-  DOT             <- '.' Spacing
-  BEGIN           <- '<' Spacing
-  END             <- '>' Spacing
-  ```
-  """
+  # Collects together parsers for all of the minor tokens for Peg parsers
+  #
+  # ```peg
+  # LEFTARROW       <- '<-' Spacing
+  # SLASH           <- '/' Spacing
+  # AND             <- '&' Spacing
+  # NOT             <- '!' Spacing
+  # QUERY           <- '?' Spacing
+  # STAR            <- '*' Spacing
+  # PLUS            <- '+' Spacing
+  # OPEN            <- '(' Spacing
+  # CLOSE           <- ')' Spacing
+  # DOT             <- '.' Spacing
+  # BEGIN           <- '<' Spacing
+  # END             <- '>' Spacing
+  # ```
 
   import NimbleParsec
   alias Pegasus.Components

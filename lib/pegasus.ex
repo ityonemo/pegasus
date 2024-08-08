@@ -12,7 +12,7 @@ defmodule Pegasus do
 
     Pegasus.parser_from_string(\"""
     foo <- "foo" "bar"
-    \""")
+    \""", foo: [parser: true])
   end
   ```
 

@@ -1,11 +1,11 @@
 defmodule Pegasus.Expression do
-  @moduledoc """
-  Produces a "expression" parser.
+  @moduledoc false
 
-  ```peg
-  Expression      <- Sequence ( SLASH Sequence )*
-  ```
-  """
+  # Produces a "expression" parser.
+  #
+  # ```peg
+  # Expression      <- Sequence ( SLASH Sequence )*
+  # ```
 
   import NimbleParsec
 

@@ -1,15 +1,15 @@
 defmodule Pegasus.Literal do
-  @moduledoc """
-  Produces a "literal" parser.
+  @moduledoc false
 
-  Note that the output of a "literal" parser leaves a NimbleParsec parser in the
-  arguments list.
-
-  ```peg
-  Literal         <- ['] < ( !['] Char  )* > ['] Spacing
-                   / ["] < ( !["] Char  )* > ["] Spacing
-  ```
-  """
+  # Produces a "literal" parser.
+  #
+  # Note that the output of a "literal" parser leaves a NimbleParsec parser in the
+  # arguments list.
+  #
+  # ```peg
+  # Literal         <- ['] < ( !['] Char  )* > ['] Spacing
+  #                 / ["] < ( !["] Char  )* > ["] Spacing
+  # ```
 
   alias Pegasus.Components
   import NimbleParsec

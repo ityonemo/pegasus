@@ -1,17 +1,17 @@
 defmodule Pegasus.Primary do
-  @moduledoc """
-  Produces a "primary" parser.  This is a single item which
+  @moduledoc false
 
-  ```peg
-  Primary        <- Identifier !LEFTARROW
-                 / OPEN Expression CLOSE
-                 / Literal
-                 / Class
-                 / DOT
-                 / Action
-                 / BEGIN Expression END
-  ```
-  """
+  # Produces a "primary" parser.  This is a single item which
+  #
+  # ```peg
+  # Primary        <- Identifier !LEFTARROW
+  #               / OPEN Expression CLOSE
+  #               / Literal
+  #               / Class
+  #               / DOT
+  #               / Action
+  #               / BEGIN Expression END
+  # ```
 
   import NimbleParsec
   alias Pegasus.Expression

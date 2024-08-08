@@ -1,17 +1,17 @@
 defmodule Pegasus.Identifier do
-  @moduledoc """
-  Produces a "identifier" parser.
+  @moduledoc false
 
-  the make_parser option should be set to false (default) when the identifier
-  is being assigned, and true when the identifier is being used as part of a
-  parser sequence.
-
-  ```peg
-  Identifier      <- < IdentStart IdentCont* > Spacing
-  IdentStart      <- [a-zA-Z_]
-  IdentCont       <- IdentStart / [0-9]
-  ```
-  """
+  # Produces a "identifier" parser.
+  #
+  # the make_parser option should be set to false (default) when the identifier
+  # is being assigned, and true when the identifier is being used as part of a
+  # parser sequence.
+  #
+  # ```peg
+  # Identifier      <- < IdentStart IdentCont* > Spacing
+  # IdentStart      <- [a-zA-Z_]
+  # IdentCont       <- IdentStart / [0-9]
+  # ```
 
   alias Pegasus.Components
   import NimbleParsec

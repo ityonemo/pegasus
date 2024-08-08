@@ -1,14 +1,14 @@
 defmodule Pegasus.Sequence do
-  @moduledoc """
-  Collects together parsers for all of the minor tokens for Peg parsers
+  @moduledoc false
 
-  ```peg
-  Sequence        <- Prefix*
-  Prefix          <- AND Action  # <== not implemented
-                   / ( AND / NOT )? Suffix
-  Suffix          <- Primary ( QUERY / STAR / PLUS )?
-  ```
-  """
+  # Collects together parsers for all of the minor tokens for Peg parsers
+  #
+  # ```peg
+  # Sequence        <- Prefix*
+  # Prefix          <- AND Action  # <== not implemented
+  #                 / ( AND / NOT )? Suffix
+  # Suffix          <- Primary ( QUERY / STAR / PLUS )?
+  # ```
 
   alias Pegasus.Tokens
   alias Pegasus.Primary

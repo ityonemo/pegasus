@@ -1,12 +1,12 @@
 defmodule Pegasus.Grammar do
-  @moduledoc """
-  produces a fully parsed grammar.
+  @moduledoc false
 
-  ```
-  Grammar         <- Spacing Definition+ EndOfFile
-  Definition      <- Identifier LEFTARROW Expression
-  ```
-  """
+  # produces a fully parsed grammar.
+  #
+  # ```
+  # Grammar         <- Spacing Definition+ EndOfFile
+  # Definition      <- Identifier LEFTARROW Expression
+  # ```
 
   import NimbleParsec
 

@@ -1,4 +1,5 @@
 defmodule Pegasus.Ast do
+  @moduledoc false
   import NimbleParsec
 
   @enforce_keys [:name]
@@ -30,14 +31,14 @@ defmodule Pegasus.Ast do
     |> maybe_alias(name_opts)
   end
 
-   defp maybe_add_position(context, name_opts) do
+  defp maybe_add_position(context, name_opts) do
     if Keyword.get(name_opts, :start_position) do
       parsec = post_traverse(context.parsec, traversal_name(context.name, :start_pos))
       %{context | parsec: parsec, start_pos?: true}
     else
       context
     end
-   end
+  end
 
   defp maybe_extract(context) do
     if context.extract == :extract do
@@ -175,6 +176,7 @@ defmodule Pegasus.Ast do
     quote bind_quoted: [ast: ast] do
       if ast.start_pos? do
         start_pos_name = Pegasus.Ast.traversal_name(ast.name, :start_pos)
+
         defp(unquote(start_pos_name)(rest, args, context, {line, offset}, col)) do
           {rest, [%{line: line, column: col - offset + 1, offset: offset} | args], context}
         end

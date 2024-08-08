@@ -1,25 +1,25 @@
 defmodule Pegasus.Components do
-  @moduledoc """
-  tools for the most simple parts of the PEG definition.
+  @moduledoc false
 
-  None of these components *a priori* generate parsers.
-
-  The following components are defined here:
-
-  ```peg
-  Range           <- Char '-' Char / Char
-  Char            <- '\\' [abefnrtv'"\[\]\\]
-                   / '\\' [0-3][0-7][0-7]
-                   / '\\' [0-7][0-7]?
-                   / '\\' '-'
-                   / !'\\' .
-  Spacing         <- ( Space / Comment )*
-  Comment         <- '#' ( !EndOfLine . )* EndOfLine
-  Space           <- ' ' / '\t' / EndOfLine
-  EndOfLine       <- '\r\n' / '\n' / '\r'
-  EndOfFile       <- !.
-  ```
-  """
+  # tools for the most simple parts of the PEG definition.
+  #
+  # None of these components *a priori* generate parsers.
+  #
+  # The following components are defined here:
+  #
+  # ```peg
+  # Range           <- Char '-' Char / Char
+  # Char            <- '\\' [abefnrtv'"\[\]\\]
+  #                 / '\\' [0-3][0-7][0-7]
+  #                 / '\\' [0-7][0-7]?
+  #                 / '\\' '-'
+  #                 / !'\\' .
+  # Spacing         <- ( Space / Comment )*
+  # Comment         <- '#' ( !EndOfLine . )* EndOfLine
+  # Space           <- ' ' / '\t' / EndOfLine
+  # EndOfLine       <- '\r\n' / '\n' / '\r'
+  # EndOfFile       <- !.
+  # ```
 
   import NimbleParsec
 
