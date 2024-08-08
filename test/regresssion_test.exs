@@ -112,4 +112,27 @@ defmodule PegasusTest.RegressionTest do
       assert_parsed(byte_range(<<0o303>>))
     end
   end
+
+  Pegasus.parser_from_string(~S"""
+  octal_escape_three_digit  <- '\065'
+  octal_escape_two_digit    <- '\65'
+  octal_escape_one_digit    <- '\5'
+  """, 
+  octal_escape_three_digit: [parser: true],
+  octal_escape_two_digit: [parser: true],
+  octal_escape_one_digit: [parser: true])
+
+  describe "octal escape" do
+    test "works with a leading zero" do
+      assert_parsed(octal_escape_three_digit("5"))
+    end
+
+    test "works with two digit" do
+      assert_parsed(octal_escape_two_digit("5"))
+    end
+
+    test "works with one digit" do
+      assert_parsed(octal_escape_one_digit(<<5>>))
+    end
+  end
 end
