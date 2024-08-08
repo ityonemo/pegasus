@@ -10,6 +10,7 @@ defmodule Pegasus.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       description: "peg -> nimbleparsec",
       package: package(),
+      docs: docs(),
       deps: deps()
     ]
   end
@@ -26,6 +27,13 @@ defmodule Pegasus.MixProject do
       links: %{
         github: "https://github.com/ityonemo/pegasus"
       }
+    ]
+  end
+
+  defp docs do
+    [
+      main: "Pegasus",
+      extras: ["README.md"]
     ]
   end
 
