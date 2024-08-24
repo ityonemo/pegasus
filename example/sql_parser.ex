@@ -1,25 +1,62 @@
 defmodule Pegasus.Example.SqlParser do
   @moduledoc """
-  A simple SQL parser.
+  Parses a SQL statement into a simplistic AST.
+
+  The output is an AST with nodes in the following format:
+  ```
+  %{
+    "type" => <node_type>
+    "opts" => [],
+    "children" => [node()]
+  }
+  ```
+  Where `opts` is any extra matadata associated with that particular node, such
+  as an identifier's name or a SELECT statement's select list or the operator of
+  a comparision expression.
   """
   require Pegasus
+  require Logger
+
   import NimbleParsec
 
   @options [
+    # Exported sub-parsers
+    expression: [parser: true, export: true],
+
+    # Post traversed nodes get transformed into proper AST nodes.
+    # This happens either with the `terminal`, `generic` or node specific post
+    # traversal function.
+    ExpressionComparision: [tag: "expression_comparision", post_traverse: :post_traverser],
+    ExpressionFunCall: [tag: "fun_call", post_traverse: :post_traverser],
+    Identifier: [tag: "identifier", post_traverse: :terminal_post_traverser],
+    StatementSelect: [tag: "select", post_traverse: :statement_post_traverser],
+    TableGet: [tag: "table_get", post_traverse: :post_traverser],
+    TokenDynamic: [tag: "token_dynamic", post_traverse: :terminal_post_traverser],
+
     # Tagged Productions
-    StatementSelect: [tag: :select],
-    SelectList: [tag: :select_list],
-    SelectTarget: [tag: :select_target],
-    StatementSubquery: [tag: :subquery],
-    Identifier: [tag: :identifier],
-    PredicateGroupBy: [tag: :group_by],
+    SelectList: [tag: "select_list"],
+    StatementSubquery: [tag: "subquery"],
+    PredicateGroupBy: [tag: "group_by"],
+    PredicateWhere: [tag: "where"],
 
     # Constants
-    ConstantInteger: [tag: :constant, collect: true],
-    ConstantString: [tag: :constant, collect: true],
+    ConstantInteger: [
+      tag: "constant_integer",
+      collect: true,
+      post_traverse: :terminal_post_traverser
+    ],
+    ConstantString: [
+      tag: "constant_string",
+      collect: true,
+      post_traverse: :terminal_post_traverser
+    ],
 
-    # Tagged tokens are used as defined options on a node.
-    TokenDistinct: [tag: :distinct],
+    # These are node-level options.
+    TokenDistinct: [tag: {:opt, "distinct"}],
+    TokenEqual: [tag: {:opt, "operator"}],
+    TokenAnd: [tag: {:opt, "operator"}],
+    TokenOr: [tag: {:opt, "operator"}],
+    TokenPlus: [tag: {:opt, "operator"}],
 
     # Ignore Tokens
     Spacing: [ignore: true],
@@ -27,14 +64,20 @@ defmodule Pegasus.Example.SqlParser do
     TokenSemiColon: [ignore: true],
     TokenOpenParen: [ignore: true],
     TokenCloseParen: [ignore: true],
-    TokenSelect: [ignore: true],
     TokenFrom: [ignore: true],
     TokenGroupBy: [ignore: true],
+    TokenWhere: [ignore: true],
+    TokenSelect: [ignore: true]
   ]
 
   Pegasus.parser_from_string(
     """
+    # Exported top level parser.
     SQL <- Statement
+
+    # Exported partial expression parser.
+    # Lower-case the name here to allow for exporting into Elixir.
+    expression <- ExpressionBinary
 
     Statement <- StatementSelect Spacing TokenSemiColon
 
@@ -44,37 +87,75 @@ defmodule Pegasus.Example.SqlParser do
       Spacing SelectList
       Spacing TokenFrom
       Spacing SelectTarget
+      (Spacing PredicateWhere)?
       (Spacing PredicateGroupBy)?
 
     SelectList <- TokenStar / Sequence
 
-    SelectTarget <- Identifier / StatementSubquery
+    SelectTarget <- TableGet / StatementSubquery
+
+    TableGet <- Identifier
 
     StatementSubquery <- TokenOpenParen StatementSelect TokenCloseParen
 
-    # Its probably better to use a new node but using this as an option
-    # is probably fine.
     PredicateGroupBy <- TokenGroupBy Spacing Sequence
 
-    Sequence <- SequenceElement ( Spacing? TokenComma Spacing? Sequence )*
+    PredicateWhere <- TokenWhere Spacing ExpressionBinary Spacing
 
-    SequenceElement <- Identifier / ConstantString / ConstantInteger
+    Sequence <- ExpressionBinary ( Spacing? TokenComma Spacing? Sequence )*
+
+    ExpressionBinary <-
+      TokenOpenParen Spacing ExpressionBinary Spacing TokenCloseParen
+      / Expr (Spacing ExpressionBinaryRest)*
+      / Expr Spacing Operator Spacing Expr
+      / Expr
+
+    ExpressionBinaryRest <-
+      Operator Spacing ExpressionBinary
+
+    Operator <-
+      TokenEqual
+      / TokenAnd
+      / TokenOr
+      / TokenPlus
+
+    Expr <-
+      ExpressionFunCall
+      / ExpressionConstant
+
+    ExpressionFunCall <-
+      Identifier Spacing TokenOpenParen Spacing ExpressionBinary Spacing TokenCloseParen
+
+    ExpressionConstant <- 
+      TokenDynamic
+      / Identifier
+      / ConstantInteger
+      / ConstantString
 
     Identifier      <- < IdentStart IdentCont* > Spacing
-    IdentStart      <- [a-zA-Z_]
+    IdentStart      <- [a-zA-Z_\.]
     IdentCont       <- IdentStart / [0-9]
+
+    # These are semi-keyword semi-constants that get defined at runtime.
+    TokenDynamic <- TokenCurrentDate
 
     # Tokens
     TokenDistinct   <- < [Dd][Ii][Ss][Tt][Ii][Nn][Cc][Tt] >
     TokenFrom       <- < [Ff][Rr][Oo][Mm] >
     TokenGroupBy    <- < [Gg][Rr][Oo][Uu][Pp] > Spacing < [Bb][Yy] >
     TokenSelect     <- < [Ss][Ee][Ll][Ee][Cc][Tt] >
+    TokenWhere      <- < [Ww][Hh][Ee][Rr][Ee] >
+    TokenCurrentDate  <- < [Cc][Uu][Rr][Rr][Ee][Nn][Tt][_][Dd][Aa][Tt][Ee] >
 
     TokenSemiColon  <- ";"
     TokenComma      <- ","
     TokenStar       <- "*"
     TokenOpenParen  <- "("
     TokenCloseParen <- ")"
+    TokenEqual      <- "="
+    TokenPlus       <- "+"
+    TokenAnd        <- < [Aa][Nn][Dd] >
+    TokenOr         <- < [Oo][Rr] >
 
     # Constants
     ConstantInteger <- [0-9]*
@@ -89,5 +170,98 @@ defmodule Pegasus.Example.SqlParser do
     @options
   )
 
-  defparsec :parse, parsec(:SQL)
+  defparsec(:parse, parsec(:SQL))
+
+  # The generic post_traverser is a helper to form a generic node from a parse node.
+  # This basically just flattens the parse node into a consistent AST structure.
+  defp post_traverser(rest, args, context, _line, _offset) do
+    [{node_type, node}] = args
+    {opts, children} = reduce_parse_node(node, {[], []})
+
+    node = %{
+      "type" => node_type,
+      "opts" => opts,
+      "children" => Enum.reverse(children)
+    }
+
+    {rest, [node], context}
+  end
+
+  defp reduce_parse_node([], acc), do: acc
+
+  defp reduce_parse_node([{{:opt, type}, opt} | rest], {opts_acc, children_acc}) do
+    reduce_parse_node(rest, {[{type, opt} | opts_acc], children_acc})
+  end
+
+  defp reduce_parse_node([child | rest], {opts_acc, children_acc}) do
+    reduce_parse_node(rest, {opts_acc, [child | children_acc]})
+  end
+
+  # The statement_post_traverser transforms statement parse nodes into AST node, as they
+  # are a bit more complex.
+  defp statement_post_traverser(rest, [{"select", node_opts}] = args, context, _, _) do
+    group_by = :proplists.get_value("group_by", node_opts, nil)
+    if group_by !== nil do
+      gbagg_post_traverser(rest, args, context)
+    else
+      select_post_traverser(rest, args, context)
+    end
+  end
+
+  # Group By Aggregate post traversal node.
+  # Strips the group by, post-traverses on the select statement, then assembles the node.
+  def gbagg_post_traverser(rest, [{"select", node_opts}], context) do
+    node_opts_no_gbagg = List.keydelete(node_opts, "group_by", 0)
+    select_traverser_input = [{"select", node_opts_no_gbagg}]
+    {_, [ast_select], _} = select_post_traverser(rest, select_traverser_input, context)
+    ast_gbagg = %{
+      "type" => "gbagg",
+      "opts" => [],
+      "children" => [ast_select]
+    }
+
+    {rest, [ast_gbagg], context}
+  end
+
+  # Post traverse wrapper for SELECTs.
+  defp select_post_traverser(rest, [{"select", node_opts}], context) do
+    select_list = :proplists.get_value("select_list", node_opts)
+    where = :proplists.get_value("where", node_opts, [])
+
+    {opts, _} = reduce_parse_node(node_opts, {[], []})
+    IO.inspect opts
+
+    target =
+      node_opts
+      |> List.keydelete("select_list", 0)
+      |> List.keydelete("where", 0)
+      |> strip_optionals([])
+
+    ast_select = %{
+      "type" => "select",
+      "opts" => [{"select_list", select_list} | opts],
+      "children" => target ++ where
+    }
+
+    {rest, [ast_select], context}
+  end
+
+  # The terminal post traverser is for simple "terminal" nodes,
+  # which are nodes with no children and basically a valued interior.
+  defp terminal_post_traverser(rest, args, context, _line, _offset) do
+    [{type, [node_name]}] = args
+
+    node = %{
+      "type" => type,
+      "opts" => [{"value", node_name}],
+      "children" => []
+    }
+
+    {rest, [node], context}
+  end
+
+  # Removes optionals from a parse node.
+  defp strip_optionals([], acc), do: Enum.reverse(acc)
+  defp strip_optionals([{{:opt, _}, _} | rest], acc), do: strip_optionals(rest, acc)
+  defp strip_optionals([head | rest], acc), do: strip_optionals(rest, [head | acc])
 end
