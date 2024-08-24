@@ -1,4 +1,4 @@
-defmodule Pegasus.Example.SqlParser do
+defmodule Pegasus.Example.Parser do
   @moduledoc """
   Parses a SQL statement into a simplistic AST.
 
@@ -26,7 +26,7 @@ defmodule Pegasus.Example.SqlParser do
     # Post traversed nodes get transformed into proper AST nodes.
     # This happens either with the `terminal`, `generic` or node specific post
     # traversal function.
-    ExpressionComparision: [tag: "expression_comparision", post_traverse: :post_traverser],
+    ExpressionBinary: [tag: "expression_binary", post_traverse: :post_traverser],
     ExpressionFunCall: [tag: "fun_call", post_traverse: :post_traverser],
     Identifier: [tag: "identifier", post_traverse: :terminal_post_traverser],
     StatementSelect: [tag: "select", post_traverse: :statement_post_traverser],
@@ -77,7 +77,7 @@ defmodule Pegasus.Example.SqlParser do
 
     # Exported partial expression parser.
     # Lower-case the name here to allow for exporting into Elixir.
-    expression <- ExpressionBinary
+    expression <- Expression
 
     Statement <- StatementSelect Spacing TokenSemiColon
 
@@ -100,15 +100,18 @@ defmodule Pegasus.Example.SqlParser do
 
     PredicateGroupBy <- TokenGroupBy Spacing Sequence
 
-    PredicateWhere <- TokenWhere Spacing ExpressionBinary Spacing
+    PredicateWhere <- TokenWhere Spacing Expression Spacing
 
-    Sequence <- ExpressionBinary ( Spacing? TokenComma Spacing? Sequence )*
+    Sequence <- Expression ( Spacing? TokenComma Spacing? Sequence )*
+
+    Expression <-
+      TokenOpenParen Spacing Expression Spacing TokenCloseParen
+      / ExpressionBinary
+      / Expr
 
     ExpressionBinary <-
-      TokenOpenParen Spacing ExpressionBinary Spacing TokenCloseParen
-      / Expr (Spacing ExpressionBinaryRest)*
-      / Expr Spacing Operator Spacing Expr
-      / Expr
+      Expr Spacing Operator Spacing Expression
+      #/ Expr (Spacing ExpressionBinaryRest)*
 
     ExpressionBinaryRest <-
       Operator Spacing ExpressionBinary
@@ -124,7 +127,7 @@ defmodule Pegasus.Example.SqlParser do
       / ExpressionConstant
 
     ExpressionFunCall <-
-      Identifier Spacing TokenOpenParen Spacing ExpressionBinary Spacing TokenCloseParen
+      Identifier Spacing TokenOpenParen Spacing Expression Spacing TokenCloseParen
 
     ExpressionConstant <- 
       TokenDynamic
@@ -229,7 +232,6 @@ defmodule Pegasus.Example.SqlParser do
     where = :proplists.get_value("where", node_opts, [])
 
     {opts, _} = reduce_parse_node(node_opts, {[], []})
-    IO.inspect opts
 
     target =
       node_opts
@@ -247,7 +249,7 @@ defmodule Pegasus.Example.SqlParser do
   end
 
   # The terminal post traverser is for simple "terminal" nodes,
-  # which are nodes with no children and basically a valued interior.
+  # which are nodes with no children and basically a constant interior.
   defp terminal_post_traverser(rest, args, context, _line, _offset) do
     [{type, [node_name]}] = args
 
