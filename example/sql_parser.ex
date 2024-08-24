@@ -1,4 +1,4 @@
-defmodule PgSuggester.Parser do
+defmodule Pegasus.Example.Parser do
   @moduledoc """
   Parses a SQL statement into a simplistic AST.
 
@@ -134,9 +134,9 @@ defmodule PgSuggester.Parser do
 
     ExpressionConstant <- 
       TokenDynamic
+      / ConstantString
       / Identifier
       / ConstantInteger
-      / ConstantString
 
     Identifier      <- < IdentStart IdentCont* > Spacing
     IdentStart      <- [a-zA-Z_\.]
@@ -177,6 +177,19 @@ defmodule PgSuggester.Parser do
   )
 
   defparsec(:parse, parsec(:SQL))
+
+  @doc "Prints the AST in a relativly reasonable format."
+  def print(ast) do
+    Logger.debug(inspect(ast, pretty: true, width: 150))
+  end
+
+  @doc """
+  Prints the AST in a relativly reasonable format with the line and file of the
+  caller.
+  """
+  def print(ast, file_caller, line_caller) do
+    Logger.debug("#{file_caller}:#{line_caller} #{inspect(ast, pretty: true, width: 150)}")
+  end
 
   # The generic post_traverser is a helper to form a generic node from a parse node.
   # This basically just flattens the parse node into a consistent AST structure.
