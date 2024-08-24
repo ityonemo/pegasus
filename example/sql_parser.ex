@@ -1,4 +1,4 @@
-defmodule Pegasus.Example.Parser do
+defmodule PgSuggester.Parser do
   @moduledoc """
   Parses a SQL statement into a simplistic AST.
 
@@ -57,6 +57,7 @@ defmodule Pegasus.Example.Parser do
     TokenAnd: [tag: {:opt, "operator"}],
     TokenOr: [tag: {:opt, "operator"}],
     TokenPlus: [tag: {:opt, "operator"}],
+    SequenceGroupBy: [tag: {:opt, "group_by_list"}],
 
     # Ignore Tokens
     Spacing: [ignore: true],
@@ -98,7 +99,9 @@ defmodule Pegasus.Example.Parser do
 
     StatementSubquery <- TokenOpenParen StatementSelect TokenCloseParen
 
-    PredicateGroupBy <- TokenGroupBy Spacing Sequence
+    PredicateGroupBy <- TokenGroupBy Spacing SequenceGroupBy
+
+    SequenceGroupBy <- Sequence
 
     PredicateWhere <- TokenWhere Spacing Expression Spacing
 
@@ -204,6 +207,7 @@ defmodule Pegasus.Example.Parser do
   # are a bit more complex.
   defp statement_post_traverser(rest, [{"select", node_opts}] = args, context, _, _) do
     group_by = :proplists.get_value("group_by", node_opts, nil)
+
     if group_by !== nil do
       gbagg_post_traverser(rest, args, context)
     else
@@ -214,12 +218,15 @@ defmodule Pegasus.Example.Parser do
   # Group By Aggregate post traversal node.
   # Strips the group by, post-traverses on the select statement, then assembles the node.
   def gbagg_post_traverser(rest, [{"select", node_opts}], context) do
-    node_opts_no_gbagg = List.keydelete(node_opts, "group_by", 0)
-    select_traverser_input = [{"select", node_opts_no_gbagg}]
+    node_opts_raw = List.keydelete(node_opts, "group_by", 0)
+    select_traverser_input = [{"select", node_opts_raw}]
     {_, [ast_select], _} = select_post_traverser(rest, select_traverser_input, context)
+
+    node_opts = :proplists.get_value("group_by", node_opts)
+    {opts, _} = reduce_parse_node(node_opts, {[], []})
     ast_gbagg = %{
       "type" => "gbagg",
-      "opts" => [],
+      "opts" => opts,
       "children" => [ast_select]
     }
 
@@ -237,7 +244,7 @@ defmodule Pegasus.Example.Parser do
       node_opts
       |> List.keydelete("select_list", 0)
       |> List.keydelete("where", 0)
-      |> strip_optionals([])
+      |> strip_optionals()
 
     ast_select = %{
       "type" => "select",
@@ -263,6 +270,8 @@ defmodule Pegasus.Example.Parser do
   end
 
   # Removes optionals from a parse node.
+  defp strip_optionals(list), do: strip_optionals(list, [])
+
   defp strip_optionals([], acc), do: Enum.reverse(acc)
   defp strip_optionals([{{:opt, _}, _} | rest], acc), do: strip_optionals(rest, acc)
   defp strip_optionals([head | rest], acc), do: strip_optionals(rest, [head | acc])
