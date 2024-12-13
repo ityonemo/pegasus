@@ -87,10 +87,6 @@ defmodule Pegasus do
   > Note that the second argument for a post-traversal function receives a list of
   > results from traversal in *reversed* order.
 
-  ### `:ignore`
-
-  If true, clears the arguments from the list.
-
   #### Example
 
   ```
@@ -104,6 +100,10 @@ defmodule Pegasus do
     {rest, [:parsed], context}
   end
   ```
+
+  ### `:ignore`
+
+  If true, clears the arguments from the list.
 
   ### `:parser`
 
@@ -201,10 +201,10 @@ defmodule Pegasus do
             NimbleParsec.defcombinator(name, parsec)
 
           {true, true} ->
-            NimbleParsec.defparsec(name, parsec)
+            NimbleParsec.defparsec(name, parsec, export_combinator: true)
 
           {true, parser_name} ->
-            NimbleParsec.defparsec(parser_name, parsec)
+            NimbleParsec.defparsec(parser_name, parsec, export_combinator: true)
         end
       end
     end
