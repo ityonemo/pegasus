@@ -35,6 +35,7 @@ defmodule Pegasus.MixProject do
       main: "Pegasus",
       extras: [
         "README.md",
+        "LICENSE",
         "guides/getting_started.md",
         "guides/peg_grammar.md",
         "guides/parser_options.md",

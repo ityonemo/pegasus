@@ -22,7 +22,10 @@ Rule2      <- ...
 _private   <- ...
 ```
 
-> **Note**: Capitalized identifiers like `MyRule` work but require special handling when calling from Elixir code. See the [Capitalized Identifiers](#capitalized-identifiers) section.
+> #### Capitalized Identifiers {: .info}
+>
+> Capitalized identifiers like `MyRule` work but require special handling when
+> calling from Elixir code. See the [Capitalized Identifiers](#capitalized-identifiers) section.
 
 ## Expressions
 
@@ -248,30 +251,20 @@ rule <- a b* / c
 rule <- a (b / c)*
 ```
 
-## Capitalized Identifiers
-
-Elixir treats capitalized atoms differently, so capitalized rule names require special handling:
-
-```elixir
-defmodule MyParser do
-  require Pegasus
-  import NimbleParsec
-
-  Pegasus.parser_from_string("""
-    Statement <- Expression ';'
-    Expression <- [0-9]+
-  """)
-
-  # Wrap in a lowercase parser to expose it
-  defparsec :parse, parsec(:Statement)
-end
-```
-
-Or use `Kernel.apply/3`:
-
-```elixir
-Kernel.apply(MyParser, :Statement, ["42;"])
-```
+> #### Capitalized Identifiers {: .info}
+>
+> Capitalized PEG identifiers like `Statement` or `Expression` work fine.
+> Just remember to put a colon in front of them in the options keyword list,
+> since capitalized names in Elixir are aliases:
+>
+>     Pegasus.parser_from_string("Foo <- 'foo'", Foo: [parser: :parse])
+>
+> Capitalized identifiers also require special handling when called directly.
+> You can wrap in a lowercase combinator or use `apply/3`:
+>
+>     defparsec :parse, parsec(:Foo)
+>     # or
+>     apply(MyParser, :Foo, ["foo"])
 
 ## Common Patterns
 
@@ -342,11 +335,14 @@ nonempty_list <- item (',' item)*
    keyword <- 'ifelse' / 'if'
    ```
 
-5. **Avoid left recursion**: PEG parsers don't support left recursion:
-   ```peg
-   # This will infinite loop!
-   expr <- expr '+' term
+5. **Avoid left recursion**: PEG parsers don't support left recursion.
 
-   # Use iteration instead
-   expr <- term ('+' term)*
-   ```
+> #### Left Recursion {: .warning}
+>
+> Left-recursive rules will cause infinite loops:
+>
+>     # This will infinite loop!
+>     expr <- expr '+' term
+>
+>     # Use iteration instead
+>     expr <- term ('+' term)*

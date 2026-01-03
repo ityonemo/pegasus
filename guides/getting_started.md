@@ -15,7 +15,7 @@ Add Pegasus to your dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:pegasus, "~> 0.2.6"}
+    {:pegasus, "~> 1.0"}
   ]
 end
 ```

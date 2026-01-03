@@ -208,24 +208,20 @@ defmodule Pegasus do
   You must define `my_custom_combinator` as a NimbleParsec combinator in
   your module.
 
-  ## Capitalized Identifiers
-
-  Due to Elixir's naming conventions, capitalized rule names require special
-  handling when called directly:
-
-      defmodule MyParser do
-        require Pegasus
-        import NimbleParsec
-
-        Pegasus.parser_from_string("Foo <- 'foo'")
-
-        # Wrap in a lowercase parser to call it
-        defparsec :parse, parsec(:Foo)
-      end
-
-  Alternatively, use `apply/3`:
-
-      apply(MyParser, :Foo, ["foo"])
+  > #### Capitalized Identifiers {: .info}
+  >
+  > Capitalized PEG identifiers like `Statement` or `Expression` work fine.
+  > Just remember to put a colon in front of them in the options keyword list,
+  > since capitalized names in Elixir are aliases:
+  >
+  >     Pegasus.parser_from_string("Foo <- 'foo'", Foo: [parser: :parse])
+  >
+  > Capitalized identifiers also require special handling when called directly.
+  > You can wrap in a lowercase combinator or use `apply/3`:
+  >
+  >     defparsec :parse, parsec(:Foo)
+  >     # or
+  >     apply(MyParser, :Foo, ["foo"])
 
   ## Loading from Files
 
@@ -248,10 +244,10 @@ defmodule Pegasus do
 
   See `NimbleParsec` documentation for details.
 
-  ## Not Implemented
-
-  PEG actions (C code blocks like `{ code }`) are not supported, as they are
-  specific to the C implementation. Use `:post_traverse` for custom transformations.
+  > #### Not Implemented {: .neutral}
+  >
+  > PEG actions (C code blocks like `{ code }`) are not supported, as they are
+  > specific to the C implementation. Use `:post_traverse` for custom transformations.
   """
 
   import NimbleParsec

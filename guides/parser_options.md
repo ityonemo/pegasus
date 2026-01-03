@@ -104,9 +104,10 @@ Without `:collect`, character matches remain as separate elements:
 # [0-9]+ matching "123" produces: "123"
 ```
 
-**Requirements:**
-
-When using `:collect`, all content must be iodata (binaries or character codes). Tags and tokens will cause errors.
+> #### Collect Requirements {: .warning}
+>
+> When using `:collect`, all content must be iodata (binaries or character codes).
+> Tags and tokens will cause errors.
 
 ```elixir
 Pegasus.parser_from_string("""
@@ -279,7 +280,9 @@ MyParser.number("-42")
 # => {:ok, [-42], "", ...}
 ```
 
-**Important:** Arguments are in **reversed** order:
+> #### Arguments Are Reversed {: .warning}
+>
+> The `args` parameter is in **reversed** order from how content was matched.
 
 ```elixir
 Pegasus.parser_from_string("""

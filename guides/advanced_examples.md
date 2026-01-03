@@ -434,7 +434,9 @@ And the main module references them:
 # lib/my_parser.ex
 defmodule MyParser do
   require Pegasus
-  alias MyParser.{Expression, Statement, Function}
+  alias MyParser.Expression
+  alias MyParser.Statement
+  alias MyParser.Function
 
   @parser_options [
     expr: [tag: :Expr, post_traverse: {Expression, :post_traverse, []}],
