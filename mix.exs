@@ -4,7 +4,7 @@ defmodule Pegasus.MixProject do
   def project do
     [
       app: :pegasus,
-      version: "0.2.6",
+      version: "1.0.0",
       elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -33,7 +33,16 @@ defmodule Pegasus.MixProject do
   defp docs do
     [
       main: "Pegasus",
-      extras: ["README.md"]
+      extras: [
+        "README.md",
+        "guides/getting_started.md",
+        "guides/peg_grammar.md",
+        "guides/parser_options.md",
+        "guides/advanced_examples.md"
+      ],
+      groups_for_extras: [
+        Guides: ~r/guides\/.*/
+      ]
     ]
   end
 

@@ -1,157 +1,257 @@
 defmodule Pegasus do
   @moduledoc """
-  converts `peg` files into `NimbleParsec` parsers.
+  A PEG (Parsing Expression Grammar) parser generator for Elixir.
 
-  For documentation on this peg format:  https://www.piumarta.com/software/peg/peg.1.html
+  Pegasus compiles PEG grammar definitions into efficient `NimbleParsec` parsers
+  at compile time. This gives you the familiar, readable PEG syntax while leveraging
+  NimbleParsec's optimized parsing engine.
 
-  To use, drop this in your model:
+  ## Quick Start
 
-  ```
-  defmodule MyModule
-    require Pegasus
+      defmodule MyParser do
+        require Pegasus
 
-    Pegasus.parser_from_string(\"""
-    foo <- "foo" "bar"
-    \""", foo: [parser: true])
-  end
-  ```
+        Pegasus.parser_from_string(\"""
+          numbers <- number (',' number)*
+          number  <- [0-9]+
+        \""",
+          numbers: [parser: true],
+          number: [collect: true]
+        )
+      end
 
-  See `NimbleParsec` for the description of the output.
+      MyParser.numbers("1,2,3")
+      # => {:ok, ["1", "2", "3"], "", %{}, {1, 0}, 5}
 
-  ```
-  MyModule.foo("foobar") # ==> {:ok, ["foo", "bar"], ...}
-  ```
+  ## Main API
 
-  > #### Capitalized Identifiers {: .warning}
-  >
-  > for capitalized identifiers, you will have to use `apply/3` to call the
-  > function, or you may wrap it in another combinator like so:
-  >
-  > ```elixir
-  > defmodule Capitalized do
-  >   require Pegasus
-  >   import NimbleParsec
-  >
-  >   Pegasus.parser_from_string("Foo <- 'foo'")
-  >
-  >   defparsec :parse, parsec(:Foo)
-  > end
-  > ```
+  - `parser_from_string/2` - Define parsers from a PEG grammar string
+  - `parser_from_file/2` - Load and compile a PEG grammar from a file
+  - `parser_from_ast/2` - Advanced: compile a pre-parsed AST
 
-  You may also load a parser from a file using `parser_from_file/2`.
+  ## PEG Grammar Syntax
+
+  Pegasus supports the standard PEG syntax. For the full specification, see the
+  [PEG reference](https://www.piumarta.com/software/peg/peg.1.html).
+
+  ### Rules
+
+  Rules are defined with the `<-` operator:
+
+      identifier <- expression
+
+  ### Expressions
+
+  | Syntax | Description | Example |
+  |--------|-------------|---------|
+  | `'...'` or `"..."` | Literal string | `'hello'` |
+  | `[...]` | Character class | `[a-zA-Z]` |
+  | `[^...]` | Negated character class | `[^0-9]` |
+  | `.` | Any character | `.` |
+  | `e1 e2` | Sequence | `'a' 'b'` |
+  | `e1 / e2` | Ordered choice | `'a' / 'b'` |
+  | `e*` | Zero or more | `[0-9]*` |
+  | `e+` | One or more | `[0-9]+` |
+  | `e?` | Optional | `'-'?` |
+  | `&e` | Positive lookahead | `&'x'` |
+  | `!e` | Negative lookahead | `!'x'` |
+  | `(e)` | Grouping | `('a' 'b')*` |
+  | `<e>` | Extracted group | `<[a-z]+>` |
+  | `# ...` | Comment | `# this is ignored` |
+
+  ### Escape Sequences
+
+  Pegasus supports ANSI C escape sequences in literals and character classes:
+
+  - `\\a` - bell
+  - `\\b` - backspace
+  - `\\e` - escape
+  - `\\f` - form feed
+  - `\\n` - newline
+  - `\\r` - carriage return
+  - `\\t` - tab
+  - `\\v` - vertical tab
+  - `\\'` - single quote
+  - `\\"` - double quote
+  - `\\\\` - backslash
+  - `\\[` and `\\]` - brackets (useful in character classes)
+  - `\\-` - literal hyphen (in character classes)
+  - `\\377` - octal escape (1-3 octal digits)
 
   ## Parser Options
 
-  Parser options are passed as a keyword list after the parser defintion
-  string (or file).  The keys for the options are the names of the combinators,
-  followed by a keyword list of supplied options, which are applied in the
-  specified order:
+  Options control how each grammar rule is compiled. Pass them as a keyword list
+  where keys are rule names:
 
-  ### `:start_position`
+      Pegasus.parser_from_string(grammar,
+        rule_name: [option: value, ...]
+      )
 
-  When true, drops a map `%{line: <line>, column: <column>, offset: <offset>}` into
-  the arguments for this keyword at the front of its list.
-
-  ### `:collect`
-
-  You may collect the contents of a combinator using the `collect: true` option.
-  If this combinator calls other combinators, they must leave only iodata (no
-  tags, no tokens) in the arguments list.
-
-  ### `:token`
-
-  You may substitute the contents of any combinator with a token (usually an atom).
-  The following conditions apply:
-
-  - `token: false` - no token (default)
-  - `token: true` - token is set to the atom name of the combinator
-  - `token: <value>` - token is set to the value of setting
-
-  ### `:tag`
-
-  You may tag the contents of your combinator using the `:tag` option.  The
-  following conditions apply:
-
-  - `tag: false` - No tag (default)
-  - `tag: true` - Use the combinator name as the tag.
-  - `tag: <atom>` - Use the supplied atom as the tag.
-
-  ### `:post_traverse`
-
-  You may supply a post_traversal for any parser.  See `NimbleParsec` for how to
-  implement post-traversal functions.  These are defined by passing a keyword list
-  to the `parser_from_file/2` or `parser_from_string/2` function.
-
-  > #### Post-traversal arguments are reversed {: .info }
-  >
-  > Note that the second argument for a post-traversal function receives a list of
-  > results from traversal in *reversed* order.
-
-  #### Example
-
-  ```
-  Pegasus.parser_from_string(\"""
-    foo <- "foo" "bar"
-    \""",
-    foo: [post_traverse: {:some_function, []}]
-  )
-
-  defp foo(rest, ["bar", "foo"], context, {_line, _col}, _bytes) do
-    {rest, [:parsed], context}
-  end
-  ```
-
-  ### `:ignore`
-
-  If true, clears the arguments from the list.
+  Options are applied in the order specified.
 
   ### `:parser`
 
-  You may sepecify to export a combinator as a parser by specifying `parser: true`.
-  By default, only a combinator will be generated.  See `NimbleParsec.defparsec/3`
-  to understand the difference.
+  Export the rule as a parser function (an entry point that can be called directly).
+  Without this option, rules become private combinators.
 
-  #### Example
+      Pegasus.parser_from_string(\"""
+        start <- greeting name
+        greeting <- 'Hello, '
+        name <- [a-zA-Z]+
+      \""", start: [parser: true])
 
-  ```
-  Pegasus.parser_from_string(\"""
-    foo <- "foo" "bar"
-    \""", foo: [parser: true]
-  )
-  ```
+  The `:parser` option also accepts an atom to rename the parser:
+
+      Pegasus.parser_from_string("foo <- 'foo'", foo: [parser: :parse])
+      # Creates `parse/1` instead of `foo/1`
 
   ### `:export`
 
-  You may sepecify to export a combinator as a public function by specifying `export: true`.
-  By default, the combinators are private functions.
+  Make a combinator public instead of private. Use this when you need to reference
+  the combinator from other modules or compose it with other NimbleParsec combinators.
 
-  #### Example
+      Pegasus.parser_from_string(\"""
+        foo <- 'foo'
+      \""", foo: [export: true])
 
-  ```
-  Pegasus.parser_from_string(\"""
-    foo <- "foo" "bar"
-    \""", foo: [export: true]
-  )
-  ```
+  ### `:collect`
+
+  Merge all matched content into a single binary string. Useful for rules that match
+  multiple characters you want combined.
+
+      Pegasus.parser_from_string(\"""
+        number <- [0-9]+
+      \""", number: [collect: true])
+
+      # Without collect: ["1", "2", "3"]
+      # With collect: "123"
+
+  > #### Collect requirements {: .warning}
+  > When using `:collect`, all nested combinators must leave only iodata
+  > (binaries/charlists) in the result. Tags and tokens will cause errors.
+
+  ### `:token`
+
+  Replace the matched content with a token value.
+
+  - `token: true` - Use the rule name as the token
+  - `token: :custom` - Use a custom atom as the token
+
+      Pegasus.parser_from_string(\"""
+        operator <- '+' / '-' / '*' / '/'
+      \""", operator: [collect: true, token: :op])
+
+      # Matched "+" becomes :op
+
+  ### `:tag`
+
+  Wrap the result in a tagged tuple `{tag, content}`.
+
+  - `tag: true` - Use the rule name as the tag
+  - `tag: :custom` - Use a custom atom as the tag
+
+      Pegasus.parser_from_string(\"""
+        number <- [0-9]+
+      \""", number: [collect: true, tag: :num])
+
+      # Result: {:num, "123"}
+
+  ### `:ignore`
+
+  Discard the matched content. Useful for whitespace and delimiters.
+
+      Pegasus.parser_from_string(\"""
+        list <- item (',' item)*
+        item <- [a-z]+
+      \""",
+        list: [parser: true],
+        item: [collect: true]
+      )
+
+  ### `:start_position`
+
+  Inject position information at the start of the match. Adds a map with
+  `:line`, `:column`, and `:offset` keys.
+
+      Pegasus.parser_from_string(\"""
+        token <- [a-z]+
+      \""", token: [start_position: true, collect: true])
+
+      # Result: [%{line: 1, column: 0, offset: 0}, "hello"]
+
+  ### `:post_traverse`
+
+  Apply a custom transformation function after the rule matches. The function
+  receives the parsing state and can transform the results.
+
+      Pegasus.parser_from_string(\"""
+        number <- [0-9]+
+      \""", number: [collect: true, post_traverse: {:to_integer, []}])
+
+      defp to_integer(rest, [num_string], context, _position, _offset) do
+        {rest, [String.to_integer(num_string)], context}
+      end
+
+  > #### Arguments are reversed {: .info}
+  > The second argument (matched content) is in **reversed** order from how
+  > it was matched. Plan accordingly when pattern matching.
 
   ### `:alias`
 
-  You may specify your own combinators to be run in place of what's in the grammar.
-  This is useful if the grammar is wrong or contains content that can't be run for
-  some reason.
+  Substitute a custom combinator in place of the grammar rule. Useful when
+  you need special handling that PEG syntax can't express.
 
-  #### Example
+      Pegasus.parser_from_string(\"""
+        special <- 'x'
+      \""", special: [alias: :my_custom_combinator])
 
-  ```
-  Pegasus.parser_from_string(\"""
-    foo <- "foo"
-  \""", foo: [alias: :my_combinator])
-  ```
+  You must define `my_custom_combinator` as a NimbleParsec combinator in
+  your module.
 
-  ## Not implemented features
+  ## Capitalized Identifiers
 
-  Actions, which imply the use of C code, are not implemented.  These currently fail to parse
-  but in the future they may silently do nothing.
+  Due to Elixir's naming conventions, capitalized rule names require special
+  handling when called directly:
+
+      defmodule MyParser do
+        require Pegasus
+        import NimbleParsec
+
+        Pegasus.parser_from_string("Foo <- 'foo'")
+
+        # Wrap in a lowercase parser to call it
+        defparsec :parse, parsec(:Foo)
+      end
+
+  Alternatively, use `apply/3`:
+
+      apply(MyParser, :Foo, ["foo"])
+
+  ## Loading from Files
+
+  For larger grammars, store them in `.peg` files:
+
+      # In lib/my_parser.ex
+      Pegasus.parser_from_file("priv/grammar.peg",
+        start: [parser: true]
+      )
+
+  ## Output Format
+
+  Parsers return the standard `NimbleParsec` result tuple:
+
+      {:ok, results, remaining, context, position, byte_offset}
+
+  Or on failure:
+
+      {:error, message, remaining, context, position, byte_offset}
+
+  See `NimbleParsec` documentation for details.
+
+  ## Not Implemented
+
+  PEG actions (C code blocks like `{ code }`) are not supported, as they are
+  specific to the C implementation. Use `:post_traverse` for custom transformations.
   """
 
   import NimbleParsec
